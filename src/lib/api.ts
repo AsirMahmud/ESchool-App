@@ -142,6 +142,16 @@ export const endpoints = {
   // Students
   students: '/students/',
   student: (id: string | number) => `/students/${id}/`,
+  studentParents: '/student-parents/',
+  studentParent: (id: string | number) => `/student-parents/${id}/`,
+  studentActivities: '/student-activities/',
+  studentActivity: (id: string | number) => `/student-activities/${id}/`,
+  studentDiary: '/student-diary/',
+  studentDiaryEntry: (id: string | number) => `/student-diary/${id}/`,
+  scholarships: '/scholarships/',
+  scholarship: (id: string | number) => `/scholarships/${id}/`,
+  studentScholarships: '/student-scholarships/',
+  studentScholarship: (id: string | number) => `/student-scholarships/${id}/`,
   
   // Teachers
   teachers: '/teachers/',
@@ -184,6 +194,7 @@ export const endpoints = {
   levels: '/levels/',
   level: (id: string | number) => `/levels/${id}/`,
   levelSubjects: '/level-subjects/',
+  levelSubject: (id: string | number) => `/level-subjects/${id}/`,
   
   // Sections
   sections: '/sections/',
@@ -201,23 +212,20 @@ export const endpoints = {
   
   // Attendance
   attendance: '/attendance/',
+  attendanceRecord: (id: string | number) => `/attendance/${id}/`,
+  attendanceStatistics: '/attendance/statistics/',
+  attendanceBulk: '/attendance/bulk/',
   
   // Assessments
   assessments: '/assessments/',
   
-  // Student Diary
-  studentDiary: '/student-diary/',
-  studentDiaryEntry: (id: string | number) => `/student-diary/${id}/`,
+  // Exams
+  exams: '/exams/',
+  exam: (id: string | number) => `/exams/${id}/`,
+  examResults: '/exam-results/',
+  examResult: (id: string | number) => `/exam-results/${id}/`,
   
-  // Student Payments
-  studentPayments: '/payments/',
-  studentPayment: (id: string | number) => `/payments/${id}/`,
-  
-  // Level Subjects
-  levelSubjects: '/level-subjects/',
-  levelSubject: (id: string | number) => `/level-subjects/${id}/`,
-  
-  // Section Subjects
-  sectionSubjects: '/section-subjects/',
-  sectionSubject: (id: string | number) => `/section-subjects/${id}/`,
+  // Accounts (under auth endpoints)
+  accounts: '/auth/',
+  account: (id: string | number) => `/auth/${id}/`,
 }

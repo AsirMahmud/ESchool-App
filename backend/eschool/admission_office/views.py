@@ -208,19 +208,167 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """Get attendance statistics"""
-        from django.db.models import Count
-        from datetime import date
+        from django.db.models import Count, Avg
+        from datetime import date, datetime
+        
+        # Get query parameters for filtering
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        level = request.query_params.get('level')
+        section = request.query_params.get('section')
+        subject = request.query_params.get('subject')
+        
+        # Base queryset
+        attendance_qs = Attendance.objects.all()
+        
+        # Apply filters
+        if start_date:
+            attendance_qs = attendance_qs.filter(date__gte=start_date)
+        if end_date:
+            attendance_qs = attendance_qs.filter(date__lte=end_date)
+        if level:
+            attendance_qs = attendance_qs.filter(student__level__level_no=level)
+        if section:
+            attendance_qs = attendance_qs.filter(student__section__id=section)
+        if subject:
+            attendance_qs = attendance_qs.filter(subject__s_code=subject)
         
         today = date.today()
         
+        # Calculate statistics
+        total_records = attendance_qs.count()
+        present_count = attendance_qs.filter(status='present').count()
+        absent_count = attendance_qs.filter(status='absent').count()
+        late_count = attendance_qs.filter(status='late').count()
+        excused_count = attendance_qs.filter(status='excused').count()
+        
+        # Calculate percentages
+        present_percentage = (present_count / total_records * 100) if total_records > 0 else 0
+        absent_percentage = (absent_count / total_records * 100) if total_records > 0 else 0
+        late_percentage = (late_count / total_records * 100) if total_records > 0 else 0
+        excused_percentage = (excused_count / total_records * 100) if total_records > 0 else 0
+        
+        # Get unique students count
+        total_students = attendance_qs.values('student').distinct().count()
+        
+        # Calculate average attendance
+        average_attendance = present_percentage
+        
+        # Daily stats for the period
+        daily_stats = []
+        if start_date and end_date:
+            from datetime import timedelta
+            start = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            
+            current_date = start
+            while current_date <= end:
+                day_attendance = attendance_qs.filter(date=current_date)
+                day_total = day_attendance.count()
+                day_present = day_attendance.filter(status='present').count()
+                day_absent = day_attendance.filter(status='absent').count()
+                day_late = day_attendance.filter(status='late').count()
+                day_excused = day_attendance.filter(status='excused').count()
+                
+                daily_stats.append({
+                    'date': current_date.strftime('%Y-%m-%d'),
+                    'total_students': day_total,
+                    'present': day_present,
+                    'absent': day_absent,
+                    'late': day_late,
+                    'excused': day_excused,
+                    'attendance_rate': (day_present / day_total * 100) if day_total > 0 else 0
+                })
+                current_date += timedelta(days=1)
+        
         stats = {
-            'total_records': Attendance.objects.count(),
-            'today_attendance': Attendance.objects.filter(date=today).count(),
-            'present_today': Attendance.objects.filter(date=today, status='present').count(),
-            'absent_today': Attendance.objects.filter(date=today, status='absent').count(),
-            'by_status': list(Attendance.objects.values('status').annotate(count=Count('id'))),
+            'total_students': total_students,
+            'total_records': total_records,
+            'average_attendance': round(average_attendance, 2),
+            'present_percentage': round(present_percentage, 2),
+            'absent_percentage': round(absent_percentage, 2),
+            'late_percentage': round(late_percentage, 2),
+            'excused_percentage': round(excused_percentage, 2),
+            'daily_stats': daily_stats,
         }
         return Response(stats)
+    
+    @action(detail=False, methods=['post'], url_path='bulk')
+    def bulk_attendance(self, request):
+        """Bulk create attendance records"""
+        data = request.data
+        attendance_date = data.get('date')
+        subject = data.get('subject')
+        class_period = data.get('class_period')
+        attendance_records = data.get('attendance_records', [])
+        
+        if not attendance_date or not attendance_records:
+            return Response(
+                {'error': 'date and attendance_records are required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        created_records = []
+        errors = []
+        
+        for record_data in attendance_records:
+            try:
+                # Create attendance record
+                attendance_data = {
+                    'student': record_data.get('student'),
+                    'date': attendance_date,
+                    'status': record_data.get('status', 'present'),
+                    'check_in_time': record_data.get('check_in_time'),
+                    'check_out_time': record_data.get('check_out_time'),
+                    'notes': record_data.get('notes', ''),
+                    'subject': subject,
+                    'class_period': class_period,
+                }
+                
+                # Check if record already exists
+                existing = Attendance.objects.filter(
+                    student_id=attendance_data['student'],
+                    date=attendance_data['date'],
+                    subject_id=subject if subject else None
+                ).first()
+                
+                if existing:
+                    # Update existing record
+                    for key, value in attendance_data.items():
+                        if value is not None:
+                            setattr(existing, key, value)
+                    existing.save()
+                    serializer = AttendanceSerializer(existing)
+                    created_records.append(serializer.data)
+                else:
+                    # Create new record
+                    serializer = AttendanceSerializer(data=attendance_data)
+                    if serializer.is_valid():
+                        serializer.save()
+                        created_records.append(serializer.data)
+                    else:
+                        errors.append({
+                            'student': record_data.get('student'),
+                            'errors': serializer.errors
+                        })
+                        
+            except Exception as e:
+                errors.append({
+                    'student': record_data.get('student'),
+                    'error': str(e)
+                })
+        
+        response_data = {
+            'created_records': created_records,
+            'total_created': len(created_records),
+            'errors': errors,
+            'total_errors': len(errors)
+        }
+        
+        if errors:
+            return Response(response_data, status=status.HTTP_207_MULTI_STATUS)
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class AdmissionViewSet(viewsets.ModelViewSet):

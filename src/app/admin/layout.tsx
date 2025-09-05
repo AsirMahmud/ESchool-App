@@ -22,6 +22,7 @@ import {
   School,
   Building2,
   GraduationCap,
+  UserCog,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       href: "/admin/students",
     },
     {
+      icon: <User2 className="h-5 w-5" />,
+      label: "Parents",
+      href: "/admin/parents",
+    },
+    {
       icon: <GraduationCap className="h-5 w-5" />,
       label: "Classrooms",
       href: "/admin/classrooms",
@@ -97,6 +103,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       icon: <Activity className="h-5 w-5" />,
       label: "Activities",
       href: "/admin/activities",
+    },
+    {
+      icon: <UserCog className="h-5 w-5" />,
+      label: "Account Management",
+      href: "/admin/accounts",
     },
     {
       icon: <Settings className="h-5 w-5" />,

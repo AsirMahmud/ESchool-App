@@ -32,7 +32,14 @@ class StudentSerializer(serializers.ModelSerializer):
         """Validate student number format"""
         if not value or len(value.strip()) < 3:
             raise serializers.ValidationError("Student number must be at least 3 characters long.")
-        return value.strip().upper()
+        normalized = value.strip().upper()
+        # Ensure uniqueness at serializer level to avoid 500 IntegrityError
+        qs = Student.objects.filter(student_number=normalized)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Student number already exists.")
+        return normalized
 
 
 class StudentParentSerializer(serializers.ModelSerializer):
@@ -50,7 +57,8 @@ class StudentParentSerializer(serializers.ModelSerializer):
             'parent_email', 'parent_phone', 'relationship',
             'is_primary_contact', 'is_emergency_contact', 'is_active', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at']
+        # Allow POST without providing 'student' explicitly; it is injected in the view
+        read_only_fields = ['id', 'created_at', 'student']
 
 
 class StudentActivitySerializer(serializers.ModelSerializer):

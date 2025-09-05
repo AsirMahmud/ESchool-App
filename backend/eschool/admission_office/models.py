@@ -271,8 +271,10 @@ class Attendance(models.Model):
     subject = models.ForeignKey(
         'subject.Subject',
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='attendance_records',
-        help_text="Subject for this attendance"
+        help_text="Subject for this attendance (optional)"
     )
     class_room = models.ForeignKey(
         'classroom.Class',

@@ -9,6 +9,8 @@ from .serializers import (
     StudentParentSerializer, StudentActivitySerializer, StudentDiarySerializer,
     ScholarshipSerializer, StudentScholarshipSerializer
 )
+from admission_office.models import Attendance
+from admission_office.serializers import AttendanceSerializer, AttendanceListSerializer
 
 
 class StudentViewSet(viewsets.ModelViewSet):
@@ -61,6 +63,105 @@ class StudentViewSet(viewsets.ModelViewSet):
         scholarships = student.scholarships.filter(is_active=True)
         serializer = StudentScholarshipSerializer(scholarships, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def attendance(self, request, pk=None):
+        """Get attendance records for a specific student"""
+        student = self.get_object()
+
+        # Get query parameters for filtering
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        subject = request.query_params.get('subject')
+
+        # Filter attendance records
+        attendance_records = Attendance.objects.filter(student=student)
+
+        if start_date:
+            attendance_records = attendance_records.filter(date__gte=start_date)
+        if end_date:
+            attendance_records = attendance_records.filter(date__lte=end_date)
+        if subject:
+            attendance_records = attendance_records.filter(subject__s_code=subject)
+
+        attendance_records = attendance_records.order_by('-date')
+        serializer = AttendanceListSerializer(attendance_records, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def add_attendance(self, request, pk=None):
+        """Add attendance record for a specific student"""
+        student = self.get_object()
+
+        # Get data from request
+        data = request.data.copy()
+        data['student'] = student.s_id
+
+        # Handle subject field - can be None/empty for student attendance
+        subject_id = data.get('subject')
+        if subject_id:
+            try:
+                from subject.models import Subject
+                subject = Subject.objects.get(pk=subject_id)
+                data['subject'] = subject.id
+            except (Subject.DoesNotExist, ImportError):
+                data['subject'] = None
+        else:
+            data['subject'] = None
+
+        # Create attendance record
+        serializer = AttendanceSerializer(data=data)
+        if serializer.is_valid():
+            attendance = serializer.save(student=student, subject_id=data['subject'])
+            response_serializer = AttendanceSerializer(attendance)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'], url_path='attendance/summary')
+    def attendance_summary(self, request, pk=None):
+        """Get attendance summary for a specific student"""
+        from django.db.models import Count, Q
+        from datetime import datetime
+        
+        student = self.get_object()
+        
+        # Get query parameters for date range
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        # Filter attendance records
+        attendance_records = Attendance.objects.filter(student=student)
+        
+        if start_date:
+            attendance_records = attendance_records.filter(date__gte=start_date)
+        if end_date:
+            attendance_records = attendance_records.filter(date__lte=end_date)
+        
+        # Calculate statistics
+        total_days = attendance_records.count()
+        present_days = attendance_records.filter(status='present').count()
+        absent_days = attendance_records.filter(status='absent').count()
+        late_days = attendance_records.filter(status='late').count()
+        excused_days = attendance_records.filter(status='excused').count()
+        
+        attendance_percentage = (present_days / total_days * 100) if total_days > 0 else 0
+        
+        summary = {
+            'student': str(student.s_id),
+            'student_name': student.name,
+            'student_number': student.student_number,
+            'total_days': total_days,
+            'present_days': present_days,
+            'absent_days': absent_days,
+            'late_days': late_days,
+            'excused_days': excused_days,
+            'attendance_percentage': round(attendance_percentage, 2),
+            'period_start': start_date or '',
+            'period_end': end_date or '',
+        }
+        
+        return Response(summary)
     
     @action(detail=True, methods=['post'])
     def add_parent(self, request, pk=None):

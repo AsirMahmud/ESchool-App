@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Exam, ExamResult, Attendance, Admission
+from subject.models import Subject
 
 
 class ExamSerializer(serializers.ModelSerializer):
@@ -71,11 +72,23 @@ class AttendanceSerializer(serializers.ModelSerializer):
     
     student_name = serializers.CharField(source='student.name', read_only=True)
     student_number = serializers.CharField(source='student.student_number', read_only=True)
-    subject_name = serializers.CharField(source='subject.s_name', read_only=True)
+    subject_name = serializers.SerializerMethodField()
     class_room_name = serializers.CharField(source='class_room.full_room_identifier', read_only=True)
     teacher_name = serializers.CharField(source='teacher.name', read_only=True)
     is_present = serializers.ReadOnlyField()
     working_hours = serializers.ReadOnlyField()
+    
+    def get_subject_name(self, obj):
+        """Get subject name, handle null subjects"""
+        return obj.subject.s_name if obj.subject else None
+    
+    # Subject is optional for student attendance; accept nulls with queryset
+    subject = serializers.PrimaryKeyRelatedField(
+        queryset=Subject.objects.all(),
+        required=False,
+        allow_null=True,
+        help_text="Subject for this attendance (optional for student attendance)"
+    )
     
     class Meta:
         model = Attendance
@@ -155,13 +168,19 @@ class AttendanceListSerializer(serializers.ModelSerializer):
     """Simplified serializer for Attendance list view"""
     
     student_name = serializers.CharField(source='student.name', read_only=True)
-    subject_name = serializers.CharField(source='subject.s_name', read_only=True)
+    student_number = serializers.CharField(source='student.student_number', read_only=True)
+    subject_name = serializers.SerializerMethodField()
     is_present = serializers.ReadOnlyField()
+    
+    def get_subject_name(self, obj):
+        """Get subject name, handle null subjects"""
+        return obj.subject.s_name if obj.subject else None
     
     class Meta:
         model = Attendance
         fields = [
-            'id', 'student_name', 'subject_name', 'date', 'status', 'is_present'
+            'id', 'student_name', 'student_number', 'subject_name', 'date', 
+            'status', 'check_in_time', 'check_out_time', 'notes', 'is_present'
         ]
 
 

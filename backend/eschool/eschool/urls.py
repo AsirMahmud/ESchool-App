@@ -98,9 +98,9 @@ urlpatterns = [
     # API routes
     path('api/', include(router.urls)),
     
-    # Additional payment endpoints
-    path('api/payments/summary/<int:student_id>/', PaymentViewSet.as_view({'get': 'summary_by_student'}), name='payment-summary-by-student'),
-    path('api/payments/monthly/<int:student_id>/<int:year>/<int:month>/', PaymentViewSet.as_view({'get': 'monthly'}), name='payment-monthly'),
+    # Additional payment endpoints (support UUID student IDs)
+    path('api/payments/summary/<uuid:student_id>/', PaymentViewSet.as_view({'get': 'summary_by_student'}), name='payment-summary-by-student'),
+    path('api/payments/monthly/<uuid:student_id>/<int:year>/<int:month>/', PaymentViewSet.as_view({'get': 'monthly'}), name='payment-monthly'),
     
     # Authentication routes
     path('api/auth/', include('accounts.urls')),
