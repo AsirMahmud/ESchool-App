@@ -1,0 +1,149 @@
+[
+  {
+    "model": "department.department",
+    "pk": "Computer Science",
+    "fields": {
+      "location": "Building A, Floor 2",
+      "d_type": "academic",
+      "description": "Department of Computer Science and Engineering",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "department.department",
+    "pk": "Mathematics",
+    "fields": {
+      "location": "Building B, Floor 1",
+      "d_type": "academic",
+      "description": "Department of Mathematics",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "level.level",
+    "pk": 1,
+    "fields": {
+      "level_name": "Grade 1",
+      "level_type": "elementary",
+      "description": "First grade level",
+      "age_range_min": 6,
+      "age_range_max": 7,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "level.level",
+    "pk": 2,
+    "fields": {
+      "level_name": "Grade 2",
+      "level_type": "elementary",
+      "description": "Second grade level",
+      "age_range_min": 7,
+      "age_range_max": 8,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "subject.subject",
+    "pk": "MATH101",
+    "fields": {
+      "s_name": "Basic Mathematics",
+      "subject_type": "core",
+      "difficulty_level": "beginner",
+      "description": "Introduction to basic mathematical concepts",
+      "department": "Mathematics",
+      "credits": 3,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "subject.subject",
+    "pk": "CS101",
+    "fields": {
+      "s_name": "Introduction to Programming",
+      "subject_type": "core",
+      "difficulty_level": "beginner",
+      "description": "Basic programming concepts and logic",
+      "department": "Computer Science",
+      "credits": 4,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+            "model": "classroom.class",
+    "pk": 1,
+    "fields": {
+      "floor": 1,
+      "room_no": "101",
+      "room_name": "Classroom 101",
+      "room_type": "classroom",
+      "capacity": 30,
+      "description": "Standard classroom with whiteboard and projector",
+      "is_available": true,
+      "is_air_conditioned": true,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_computers": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+            "model": "classroom.class",
+    "pk": 2,
+    "fields": {
+      "floor": 2,
+      "room_no": "201",
+      "room_name": "Computer Lab 201",
+      "room_type": "computer_lab",
+      "capacity": 25,
+      "description": "Computer laboratory with 25 workstations",
+      "equipment": "25 Desktop computers, 1 Teacher workstation, Network printer",
+      "is_available": true,
+      "is_air_conditioned": true,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_computers": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "scholarship.scholarship",
+    "pk": 1,
+    "fields": {
+      "name": "Merit Scholarship",
+      "scholarship_type": "merit",
+      "description": "Scholarship for students with excellent academic performance",
+      "amount": 1000.00,
+      "criteria": "Minimum 90% marks in previous academic year",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "scholarship.scholarship",
+    "pk": 2,
+    "fields": {
+      "name": "Need-based Scholarship",
+      "scholarship_type": "need",
+      "description": "Financial assistance for students from low-income families",
+      "amount": 500.00,
+      "criteria": "Family income below $30,000 per year",
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

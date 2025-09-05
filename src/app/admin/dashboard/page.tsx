@@ -46,7 +46,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-// import { KpiCard } from "@/components/KpiCard";
+import { useStudents } from "@/hooks/use-students";
+import { useTeachers } from "@/hooks/use-teachers";
+import { useEmployees } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
+import { useSubjects } from "@/hooks/use-subjects";
+import { useClasses } from "@/hooks/use-classes";
 
 import { QuickAccessButton } from "./components/QuickAccessButton";
 import { EventItem } from "./components/EventItem";
@@ -58,6 +63,12 @@ import { KpiCard } from "./components/KpiCard";
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function AdminDashboard() {
+  const { data: students, isLoading: studentsLoading } = useStudents()
+  const { data: teachers, isLoading: teachersLoading } = useTeachers()
+  const { data: employees, isLoading: employeesLoading } = useEmployees()
+  const { data: departments, isLoading: departmentsLoading } = useDepartments()
+  const { data: subjects, isLoading: subjectsLoading } = useSubjects()
+  const { data: classes, isLoading: classesLoading } = useClasses()
   // Sample data for charts
   const attendanceData = [
     { date: "Mon", present: 95.2, absent: 4.8 },
@@ -117,30 +128,30 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Total Students"
-          value="1,248"
+          value={studentsLoading ? "Loading..." : (students?.length || 0).toString()}
           trend="+3.2%"
           trendUp={true}
-          description="42 new this month"
+          description="From database"
           icon={<Users className="h-5 w-5" />}
           linkHref="/admin/students"
         />
         <KpiCard
           title="Total Teachers"
-          value="86"
+          value={teachersLoading ? "Loading..." : (teachers?.length || 0).toString()}
           trend="+1.2%"
           trendUp={true}
-          description="3 new this month"
+          description="From database"
           icon={<GraduationCap className="h-5 w-5" />}
           linkHref="/admin/teachers"
         />
         <KpiCard
           title="Total Staff"
-          value="42"
+          value={employeesLoading ? "Loading..." : (employees?.length || 0).toString()}
           trend="+2.4%"
           trendUp={true}
-          description="1 new this month"
+          description="From database"
           icon={<UserCog className="h-5 w-5" />}
-          linkHref="/admin/employees"
+          linkHref="/admin/employee"
         />
         <KpiCard
           title="Revenue"

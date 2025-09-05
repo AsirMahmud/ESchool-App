@@ -20,6 +20,7 @@ import {
   Building2,
 } from "lucide-react";
 
+
 export default function LoginSelectionPage() {
   const loginOptions = [
     {
@@ -126,6 +127,8 @@ export default function LoginSelectionPage() {
             </Card>
           ))}
         </div>
+
+
 
         <footer className="text-center text-sm text-muted-foreground pb-8">
           <p>© 2025 EduManage Pro. All rights reserved.</p>

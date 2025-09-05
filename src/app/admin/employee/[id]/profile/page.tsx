@@ -1,3 +1,6 @@
+"use client"
+
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,106 +19,30 @@ import {
   Edit,
 } from "lucide-react";
 import Link from "next/link";
+import { useEmployee } from "@/hooks/use-employees";
 
 export default function EmployeeProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }> | { id: string };
 }) {
-  // In a real application, you would fetch the employee data based on the ID
-  const employee = {
-    id: params.id,
-    name: "John Smith",
-    email: "john.smith@eschool.edu",
-    phone: "+1 (555) 123-4567",
-    department: "Administration",
-    position: "Principal",
-    role: "Administrator",
-    status: "Active",
-    joinDate: "August 15, 2020",
-    address: "123 School Street, Education City, EC 12345",
-    avatar: "/placeholder.svg?height=128&width=128",
-    bio: "John Smith is an experienced educational administrator with over 15 years of experience in school management and leadership. He has a passion for creating positive learning environments and implementing innovative educational strategies.",
-    education: [
-      {
-        degree: "Ph.D. in Educational Leadership",
-        institution: "University of Education",
-        year: "2010",
-      },
-      {
-        degree: "Master's in School Administration",
-        institution: "State University",
-        year: "2005",
-      },
-      {
-        degree: "Bachelor's in Education",
-        institution: "City College",
-        year: "2000",
-      },
-    ],
-    experience: [
-      {
-        position: "Vice Principal",
-        institution: "Westside High School",
-        duration: "2015-2020",
-      },
-      {
-        position: "Department Head",
-        institution: "Eastside Academy",
-        duration: "2010-2015",
-      },
-      {
-        position: "Senior Teacher",
-        institution: "Central School District",
-        duration: "2005-2010",
-      },
-    ],
-    certifications: [
-      "Advanced Educational Leadership Certification",
-      "School Management and Administration License",
-      "Crisis Management in Educational Settings",
-      "Inclusive Education Practices",
-    ],
-    skills: [
-      "Educational Leadership",
-      "Curriculum Development",
-      "Staff Management",
-      "Budget Planning",
-      "Strategic Planning",
-      "Community Engagement",
-      "Crisis Management",
-      "Educational Technology",
-    ],
-    documents: [
-      { name: "Employment Contract", date: "Aug 15, 2020", type: "PDF" },
-      { name: "Performance Review 2023", date: "Dec 10, 2023", type: "PDF" },
-      { name: "Leadership Certification", date: "Mar 22, 2019", type: "PDF" },
-      {
-        name: "Professional Development Plan",
-        date: "Jan 05, 2024",
-        type: "DOCX",
-      },
-    ],
-    attendance: {
-      present: 220,
-      absent: 5,
-      leave: 10,
-      late: 3,
-    },
-    performanceRatings: [
-      { year: "2023", rating: 4.8 },
-      { year: "2022", rating: 4.7 },
-      { year: "2021", rating: 4.6 },
-      { year: "2020", rating: 4.5 },
-    ],
-  };
+  const { id } = React.use(params as any)
+  const { data: employee, isLoading, error } = useEmployee(id)
+
+  if (isLoading) {
+    return <div className="py-10 text-center">Loading profile...</div>
+  }
+
+  if (error || !employee) {
+    return <div className="py-10 text-center text-red-600">Failed to load employee.</div>
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/admin/employees">
+            <Link href="/admin/employee">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -123,13 +50,13 @@ export default function EmployeeProfilePage({
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/admin/employees/${params.id}/edit`}>
+            <Link href={`/admin/employee/${id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Edit Profile
             </Link>
           </Button>
           <Button asChild>
-            <Link href={`/admin/employees/${params.id}/permissions`}>
+            <Link href={`/admin/employee/${id}/permissions`}>
               Manage Permissions
             </Link>
           </Button>
@@ -141,65 +68,77 @@ export default function EmployeeProfilePage({
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <Avatar className="h-32 w-32">
-                <AvatarImage
-                  src={employee.avatar || "/placeholder.svg"}
-                  alt={employee.name}
-                />
+                <AvatarImage src={(employee as any).avatar || "/placeholder.svg"} alt={employee.name || 'Employee'} />
                 <AvatarFallback>
-                  {employee.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {((employee.name || '')
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((n: string) => n[0])
+                    .slice(0, 2)
+                    .join("") || (employee.email?.[0]?.toUpperCase() ?? 'E'))}
                 </AvatarFallback>
               </Avatar>
               <h2 className="mt-4 text-xl font-bold">{employee.name}</h2>
-              <p className="text-muted-foreground">{employee.position}</p>
+              <p className="text-muted-foreground">{employee.position || '-'}</p>
               <Badge
                 variant="outline"
                 className="mt-2 bg-purple-100 text-purple-800 border-purple-200"
               >
-                {employee.role}
+                {employee.role || '-'}
               </Badge>
               <Badge
-                variant={employee.status === "Active" ? "default" : "secondary"}
+                variant={(employee.status || '').toLowerCase() === "active" ? "default" : "secondary"}
                 className="mt-2"
               >
-                {employee.status}
+                {employee.status || '-'}
               </Badge>
             </div>
 
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{employee.email}</span>
+                <span>{employee.email || '-'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{employee.phone}</span>
+                <span>{employee.phone || '-'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{employee.address}</span>
+                <span>{(employee as any).address || '-'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
-                <span>{employee.department}</span>
+                <span>{(employee as any).department_name || (employee as any).department || '-'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>Joined: {employee.joinDate}</span>
+                <span>Joined: {employee.join_date || '-'}</span>
               </div>
             </div>
 
             <div className="mt-6">
               <h3 className="font-medium">Skills & Expertise</h3>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {employee.skills.map((skill, index) => (
-                  <Badge key={index} variant="outline">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
+              {(() => {
+                const rawSkills: any = (employee as any).skills
+                const skills = Array.isArray(rawSkills)
+                  ? rawSkills
+                  : typeof rawSkills === 'string'
+                  ? rawSkills.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean)
+                  : []
+                if (!skills.length) {
+                  return <p className="mt-2 text-sm text-muted-foreground">No skills provided.</p>
+                }
+                return (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {skills.map((skill: string, index: number) => (
+                      <Badge key={`${skill}-${index}`} variant="outline">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </CardContent>
         </Card>
@@ -207,215 +146,190 @@ export default function EmployeeProfilePage({
         <div className="space-y-6 md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>About</CardTitle>
+              <CardTitle>Personal Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p>{employee.bio}</p>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Full Name</p>
+                <p className="font-medium">{employee.name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Email</p>
+                <p className="font-medium">{employee.email || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Phone</p>
+                <p className="font-medium">{employee.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Address</p>
+                <p className="font-medium">{(employee as any).address || '-'}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-xs text-muted-foreground">About</p>
+                <p className="font-medium whitespace-pre-wrap">{(employee as any).about || '-'}</p>
+              </div>
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="education" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="education">Education</TabsTrigger>
-              <TabsTrigger value="experience">Experience</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
-              <TabsTrigger value="performance">Performance</TabsTrigger>
-            </TabsList>
-            <TabsContent value="education" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5" />
-                    Education & Qualifications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {employee.education.map((edu, index) => (
-                      <div
-                        key={index}
-                        className="border-l-2 border-primary pl-4"
-                      >
-                        <h3 className="font-medium">{edu.degree}</h3>
-                        <p className="text-muted-foreground">
-                          {edu.institution}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {edu.year}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Employment</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Position</p>
+                <p className="font-medium">{employee.position || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Role</p>
+                <p className="font-medium capitalize">{(employee.role || '').replace('_', ' ') || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Department</p>
+                <p className="font-medium">{(employee as any).department_name || (employee as any).department || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Teacher Room</p>
+                <p className="font-medium">{(employee as any).teacher_room || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Join Date</p>
+                <p className="font-medium">{employee.join_date || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="font-medium capitalize">{(employee.status || '').replace('_', ' ') || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Years of Service</p>
+                <p className="font-medium">{(employee as any).years_of_service ?? '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Is Teacher</p>
+                <p className="font-medium">{(employee as any).is_teacher ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Salary</p>
+                <p className="font-medium">{(employee as any).salary ?? '-'}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="mt-8">
-                    <h3 className="font-medium">Certifications</h3>
-                    <ul className="mt-2 space-y-2">
-                      {employee.certifications.map((cert, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <Award className="h-4 w-4 text-primary" />
-                          <span>{cert}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="experience" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    Work Experience
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {employee.experience.map((exp, index) => (
-                      <div
-                        key={index}
-                        className="border-l-2 border-primary pl-4"
-                      >
-                        <h3 className="font-medium">{exp.position}</h3>
-                        <p className="text-muted-foreground">
-                          {exp.institution}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {exp.duration}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="documents" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Documents & Files
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {employee.documents.map((doc, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-lg border p-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-medium">{doc.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Added: {doc.date}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant="outline">{doc.type}</Badge>
-                        <Button variant="ghost" size="sm">
-                          View
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  <Button variant="outline" className="mt-4 w-full">
-                    Upload New Document
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="performance" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Qualifications</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <p className="text-xs text-muted-foreground">Education</p>
+                <p className="font-medium whitespace-pre-wrap">{(employee as any).education || '-'}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-xs text-muted-foreground">Experience</p>
+                <p className="font-medium whitespace-pre-wrap">{(employee as any).experience || '-'}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <p className="text-xs text-muted-foreground">Certifications</p>
+                <p className="font-medium whitespace-pre-wrap">{(employee as any).certification || '-'}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Emergency Contact</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Contact Name</p>
+                <p className="font-medium">{(employee as any).emergency_contact || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Contact Phone</p>
+                <p className="font-medium">{(employee as any).emergency_phone || '-'}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>System Metadata</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Employee ID</p>
+                <p className="font-medium break-all">{(employee as any).emp_id || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Created</p>
+                <p className="font-medium">{(employee as any).created_at || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Updated</p>
+                <p className="font-medium">{(employee as any).updated_at || '-'}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Tabs defaultValue="attendance" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="deptExp">Department Experience</TabsTrigger>
+            </TabsList>
+            <TabsContent value="attendance" className="mt-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="h-5 w-5" />
-                    Performance & Attendance
+                    Attendance Records
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div>
-                      <h3 className="font-medium">Performance Ratings</h3>
-                      <div className="mt-4 space-y-3">
-                        {employee.performanceRatings.map((perf, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between"
-                          >
-                            <span>{perf.year}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-32 rounded-full bg-gray-200">
-                                <div
-                                  className="h-2 rounded-full bg-primary"
-                                  style={{
-                                    width: `${(perf.rating / 5) * 100}%`,
-                                  }}
-                                ></div>
-                              </div>
-                              <span className="font-medium">
-                                {perf.rating}/5
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <Button variant="outline" className="mt-4" asChild>
-                        <Link
-                          href={`/admin/employees/${params.id}/performance`}
-                        >
-                          View Full Report
-                        </Link>
+                  {Array.isArray((employee as any).attendance_records) && (employee as any).attendance_records.length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {(employee as any).attendance_records.map((r: any) => (
+                        <li key={r.id} className="flex items-center justify-between rounded-md border p-2">
+                          <span>{r.date}</span>
+                          <span className="capitalize">{(r.status || '').replace('_',' ')}</span>
+                          <span>{r.check_in_time || '-'}</span>
+                          <span>{r.check_out_time || '-'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">No attendance records.</span>
+                      <Button variant="outline" asChild>
+                        <Link href={`/admin/employee/${id}/attendance`}>Mark / View Attendance</Link>
                       </Button>
                     </div>
-                    <div>
-                      <h3 className="font-medium">Attendance Summary</h3>
-                      <div className="mt-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                            <span>Present</span>
-                          </div>
-                          <span className="font-medium">
-                            {employee.attendance.present} days
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                            <span>Absent</span>
-                          </div>
-                          <span className="font-medium">
-                            {employee.attendance.absent} days
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-amber-500"></div>
-                            <span>Leave</span>
-                          </div>
-                          <span className="font-medium">
-                            {employee.attendance.leave} days
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-                            <span>Late</span>
-                          </div>
-                          <span className="font-medium">
-                            {employee.attendance.late} days
-                          </span>
-                        </div>
-                      </div>
-                      <Button variant="outline" className="mt-4" asChild>
-                        <Link href={`/admin/employees/${params.id}/attendance`}>
-                          View Attendance Log
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="deptExp" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5" />
+                    Department Experience
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {Array.isArray((employee as any).experiences) && (employee as any).experiences.length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {(employee as any).experiences.map((e: any) => (
+                        <li key={e.id} className="rounded-md border p-2">
+                          <div className="font-medium">{e.department_name || e.department}</div>
+                          <div className="text-muted-foreground">{e.position}</div>
+                          <div className="text-xs text-muted-foreground">{e.start_date} → {e.end_date || 'Present'}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground">No department experience.</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

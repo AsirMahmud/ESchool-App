@@ -41,11 +41,37 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import { useClasses, useDeleteClass } from "@/hooks/use-classes";
 
 export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("all");
   const [selectedSection, setSelectedSection] = useState("all");
+  
+  const { data: classes, isLoading, error } = useClasses()
+  const deleteClassMutation = useDeleteClass()
+
+  const handleDeleteClass = (id: number) => {
+    if (confirm('Are you sure you want to delete this class?')) {
+      deleteClassMutation.mutate(id)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading classes...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">Error loading classes: {error.message}</div>
+      </div>
+    )
+  }
 
   // Sample classes data
   const classesData = [

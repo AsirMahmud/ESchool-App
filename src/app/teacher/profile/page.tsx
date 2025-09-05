@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useTeacher, useUpdateTeacher, useTeacherSubjects, useTeacherClasses, useTeacherPerformance } from "@/hooks/use-teachers";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +75,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 
 // Menu icon component
-const MenuIcon = ({ className }) => (
+const MenuIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -241,8 +242,24 @@ export default function TeacherProfilePage() {
   const [theme, setTheme] = useState("light");
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(teacherData);
   const [isUploadPhotoOpen, setIsUploadPhotoOpen] = useState(false);
+
+  // Replace with actual teacher ID from authentication
+  const teacherId = 1;
+  const { data: teacher, isLoading } = useTeacher(teacherId);
+  const { data: subjects } = useTeacherSubjects(teacherId);
+  const { data: classes } = useTeacherClasses(teacherId);
+  const { data: performance } = useTeacherPerformance(teacherId);
+  const updateTeacherMutation = useUpdateTeacher();
+
+  const [profileData, setProfileData] = useState({
+    bio: teacher?.bio || "",
+    qualification: teacher?.qualification || "",
+    specialization: teacher?.specialization || "",
+    years_of_experience: teacher?.years_of_experience || 0,
+    is_class_teacher: teacher?.is_class_teacher || false,
+    max_classes: teacher?.max_classes || 5,
+  });
 
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
@@ -251,8 +268,14 @@ export default function TeacherProfilePage() {
   };
 
   const handleSaveProfile = () => {
-    setIsEditing(false);
-    // In a real app, you would save the profile data to the server here
+    updateTeacherMutation.mutate({
+      teacher_id: teacherId,
+      ...profileData
+    }, {
+      onSuccess: () => {
+        setIsEditing(false);
+      }
+    });
   };
 
   return (
@@ -331,9 +354,9 @@ export default function TeacherProfilePage() {
                   <AvatarFallback>JS</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block text-left">
-                  <div className="text-sm font-medium">{profileData.name}</div>
+                  <div className="text-sm font-medium">{teacher?.teacher_name || "Loading..."}</div>
                   <div className="text-xs text-muted-foreground">
-                    {profileData.title}
+                    {teacher?.specialization || "Teacher"}
                   </div>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -416,18 +439,18 @@ export default function TeacherProfilePage() {
                   <CardTitle>Profile Completion</CardTitle>
                   <Badge
                     variant={
-                      profileData.profileCompletion >= 90
+                      (teacher?.bio ? 1 : 0) + (teacher?.qualification ? 1 : 0) + (teacher?.specialization ? 1 : 0) >= 2
                         ? "default"
                         : "outline"
                     }
                   >
-                    {profileData.profileCompletion}%
+                    {Math.round(((teacher?.bio ? 1 : 0) + (teacher?.qualification ? 1 : 0) + (teacher?.specialization ? 1 : 0)) / 3 * 100)}%
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <Progress
-                  value={profileData.profileCompletion}
+                  value={((teacher?.bio ? 1 : 0) + (teacher?.qualification ? 1 : 0) + (teacher?.specialization ? 1 : 0)) / 3 * 100}
                   className="h-2"
                 />
                 <p className="text-sm text-muted-foreground mt-2">
@@ -446,14 +469,14 @@ export default function TeacherProfilePage() {
                     <div className="relative mb-4">
                       <Avatar className="h-32 w-32">
                         <AvatarImage
-                          src={profileData.avatar}
-                          alt={profileData.name}
+                          src="/placeholder.svg?height=300&width=300"
+                          alt={teacher?.teacher_name || "Teacher"}
                         />
                         <AvatarFallback className="text-2xl">
-                          {profileData.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {teacher?.teacher_name
+                            ?.split(" ")
+                            .map((n: string) => n[0])
+                            .join("") || "T"}
                         </AvatarFallback>
                       </Avatar>
                       <Dialog
@@ -504,151 +527,78 @@ export default function TeacherProfilePage() {
                         </DialogContent>
                       </Dialog>
                     </div>
-                    <h2 className="text-xl font-bold">{profileData.name}</h2>
-                    <p className="text-muted-foreground">{profileData.title}</p>
+                    <h2 className="text-xl font-bold">{teacher?.teacher_name || "Loading..."}</h2>
+                    <p className="text-muted-foreground">{teacher?.specialization || "Teacher"}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {profileData.department}
+                      {teacher?.department_name || "Department"}
                     </p>
                     <div className="w-full mt-4 space-y-2">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         {isEditing ? (
                           <Input
-                            value={profileData.email}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                email: e.target.value,
-                              })
-                            }
+                            value={teacher?.teacher_email || ""}
+                            disabled
                             className="h-8"
                           />
                         ) : (
-                          <span className="text-sm">{profileData.email}</span>
+                          <span className="text-sm">{teacher?.teacher_email || "N/A"}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         {isEditing ? (
                           <Input
-                            value={profileData.phone}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                phone: e.target.value,
-                              })
-                            }
+                            value={teacher?.teacher_phone || ""}
+                            disabled
                             className="h-8"
                           />
                         ) : (
-                          <span className="text-sm">{profileData.phone}</span>
+                          <span className="text-sm">{teacher?.teacher_phone || "N/A"}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         {isEditing ? (
                           <Input
-                            value={profileData.location}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                location: e.target.value,
-                              })
-                            }
+                            value="Room SCI-4"
+                            disabled
                             className="h-8"
                           />
                         ) : (
                           <span className="text-sm">
-                            {profileData.location}
+                            Room SCI-4
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          Joined {profileData.joinDate}
+                          Joined {teacher?.created_at ? new Date(teacher.created_at).toLocaleDateString() : "N/A"}
                         </span>
                       </div>
                     </div>
                     <div className="w-full mt-4 pt-4 border-t">
-                      <h3 className="text-sm font-medium mb-2">Social Links</h3>
+                      <h3 className="text-sm font-medium mb-2">Teaching Information</h3>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Link2 className="h-4 w-4 text-muted-foreground" />
-                          {isEditing ? (
-                            <Input
-                              value={profileData.socialLinks.website}
-                              onChange={(e) =>
-                                setProfileData({
-                                  ...profileData,
-                                  socialLinks: {
-                                    ...profileData.socialLinks,
-                                    website: e.target.value,
-                                  },
-                                })
-                              }
-                              className="h-8"
-                            />
-                          ) : (
-                            <a
-                              href={`https://${profileData.socialLinks.website}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {profileData.socialLinks.website}
-                            </a>
-                          )}
+                          <BookOpen className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            Specialization: {teacher?.specialization || "Not specified"}
+                          </span>
                         </div>
-                        {Object.entries(profileData.socialLinks).map(
-                          ([key, value]) => {
-                            if (key === "website") return null;
-                            return (
-                              <div
-                                key={key}
-                                className="flex items-center gap-2"
-                              >
-                                <div className="h-4 w-4 text-muted-foreground flex items-center justify-center">
-                                  {key[0].toUpperCase()}
-                                </div>
-                                {isEditing ? (
-                                  <Input
-                                    value={value}
-                                    onChange={(e) =>
-                                      setProfileData({
-                                        ...profileData,
-                                        socialLinks: {
-                                          ...profileData.socialLinks,
-                                          [key]: e.target.value,
-                                        },
-                                      })
-                                    }
-                                    className="h-8"
-                                  />
-                                ) : (
-                                  <a
-                                    href={`https://${value}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline"
-                                  >
-                                    {value}
-                                  </a>
-                                )}
-                              </div>
-                            );
-                          }
-                        )}
-                        {isEditing && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full mt-2"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Social Link
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            Max Classes: {teacher?.max_classes || 0}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {teacher?.is_class_teacher ? "Class Teacher" : "Subject Teacher"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -660,22 +610,28 @@ export default function TeacherProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {profileData.classes.map((cls, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center p-2 rounded-md hover:bg-muted"
-                        >
-                          <div>
-                            <div className="font-medium">{cls.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              Grade {cls.grade}
-                            </div>
-                          </div>
-                          <Badge variant="outline">
-                            {cls.students} students
-                          </Badge>
+                      {classes?.length === 0 ? (
+                        <div className="text-center py-4 text-muted-foreground">
+                          No classes assigned
                         </div>
-                      ))}
+                      ) : (
+                        classes?.map((cls) => (
+                          <div
+                            key={cls.id}
+                            className="flex justify-between items-center p-2 rounded-md hover:bg-muted"
+                          >
+                            <div>
+                              <div className="font-medium">{cls.class_room_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {cls.subject_name}
+                              </div>
+                            </div>
+                            <Badge variant="outline">
+                              Active
+                            </Badge>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </CardContent>
                   <CardFooter>
@@ -703,9 +659,12 @@ export default function TeacherProfilePage() {
                           })
                         }
                         className="min-h-[150px]"
+                        placeholder="Tell us about yourself, your teaching philosophy, and experience..."
                       />
                     ) : (
-                      <p className="text-muted-foreground">{profileData.bio}</p>
+                      <p className="text-muted-foreground">
+                        {teacher?.bio || "No bio available. Click edit to add your bio."}
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -721,26 +680,24 @@ export default function TeacherProfilePage() {
                   </TabsList>
 
                   <TabsContent value="education" className="space-y-4 pt-4">
-                    {profileData.education.map((edu, i) => (
-                      <div key={i} className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium">{edu.degree}</h3>
-                          {isEditing && (
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                          <Building className="h-4 w-4" />
-                          <span>{edu.institution}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>{edu.year}</span>
-                        </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex justify-between">
+                        <h3 className="font-medium">{teacher?.qualification || "No qualification listed"}</h3>
+                        {isEditing && (
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Building className="h-4 w-4" />
+                        <span>Teaching Qualification</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>Years of Experience: {teacher?.years_of_experience || 0}</span>
+                      </div>
+                    </div>
                     {isEditing && (
                       <Button variant="outline" className="w-full">
                         <Plus className="h-4 w-4 mr-2" />
@@ -750,29 +707,29 @@ export default function TeacherProfilePage() {
                   </TabsContent>
 
                   <TabsContent value="experience" className="space-y-4 pt-4">
-                    {profileData.experience.map((exp, i) => (
-                      <div key={i} className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium">{exp.position}</h3>
-                          {isEditing && (
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                          <Building className="h-4 w-4" />
-                          <span>{exp.institution}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {exp.startYear} - {exp.endYear}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm">{exp.description}</p>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex justify-between">
+                        <h3 className="font-medium">Teaching Experience</h3>
+                        {isEditing && (
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Building className="h-4 w-4" />
+                        <span>Current Institution</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {teacher?.years_of_experience || 0} years of experience
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm">
+                        {teacher?.qualification || "Teaching qualification not specified"}
+                      </p>
+                    </div>
                     {isEditing && (
                       <Button variant="outline" className="w-full">
                         <Plus className="h-4 w-4 mr-2" />
@@ -785,30 +742,28 @@ export default function TeacherProfilePage() {
                     value="certifications"
                     className="space-y-4 pt-4"
                   >
-                    {profileData.certifications.map((cert, i) => (
-                      <div key={i} className="border rounded-lg p-4">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium">{cert.name}</h3>
-                          {isEditing && (
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                          <Building className="h-4 w-4" />
-                          <span>{cert.issuer}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>Issued: {cert.year}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>Expires: {cert.expires}</span>
-                        </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="flex justify-between">
+                        <h3 className="font-medium">Teaching Qualification</h3>
+                        {isEditing && (
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <Building className="h-4 w-4" />
+                        <span>Educational Institution</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>Qualification: {teacher?.qualification || "Not specified"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>Experience: {teacher?.years_of_experience || 0} years</span>
+                      </div>
+                    </div>
                     {isEditing && (
                       <Button variant="outline" className="w-full">
                         <Plus className="h-4 w-4 mr-2" />
@@ -821,15 +776,17 @@ export default function TeacherProfilePage() {
                     <Card>
                       <CardContent className="pt-6">
                         <div className="flex flex-wrap gap-2">
-                          {profileData.skills.map((skill, i) => (
-                            <Badge
-                              key={i}
-                              variant="secondary"
-                              className="px-3 py-1"
-                            >
-                              {skill}
+                          <Badge variant="secondary" className="px-3 py-1">
+                            {teacher?.specialization || "General Teaching"}
+                          </Badge>
+                          {teacher?.is_class_teacher && (
+                            <Badge variant="secondary" className="px-3 py-1">
+                              Class Teacher
                             </Badge>
-                          ))}
+                          )}
+                          <Badge variant="secondary" className="px-3 py-1">
+                            {teacher?.years_of_experience || 0} Years Experience
+                          </Badge>
                           {isEditing && (
                             <Button
                               variant="outline"
@@ -852,33 +809,30 @@ export default function TeacherProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {profileData.achievements.map((achievement, i) => (
-                        <div key={i} className="flex items-start gap-4">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <Award className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{achievement.title}</h3>
-                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span>{achievement.year}</span>
+                      {performance && performance.length > 0 ? (
+                        performance.slice(0, 3).map((perf) => (
+                          <div key={perf.id} className="flex items-start gap-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <Award className="h-5 w-5" />
                             </div>
-                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                              <Building className="h-4 w-4" />
-                              <span>{achievement.issuer}</span>
+                            <div>
+                              <h3 className="font-medium">Performance Review</h3>
+                              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                <span>{new Date(perf.evaluation_date).toLocaleDateString()}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                                <Building className="h-4 w-4" />
+                                <span>Overall Rating: {perf.overall_rating}</span>
+                              </div>
                             </div>
                           </div>
-                          {isEditing && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="ml-auto"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
+                        ))
+                      ) : (
+                        <div className="text-center py-4 text-muted-foreground">
+                          No performance records available
                         </div>
-                      ))}
+                      )}
                     </div>
                     {isEditing && (
                       <Button variant="outline" className="w-full mt-4">

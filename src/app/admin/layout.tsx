@@ -1,4 +1,7 @@
+'use client'
+
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   Bell,
@@ -17,6 +20,8 @@ import {
   Activity,
   User2,
   School,
+  Building2,
+  GraduationCap,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -26,29 +31,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import AdminAuthWrapper from "@/components/admin-auth-wrapper";
+import { useAdminLogout, useIsAdminAuthenticated } from "@/hooks/use-admin-auth";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
+  const { user } = useIsAdminAuthenticated()
+  const logoutMutation = useAdminLogout()
+
+  const handleLogout = () => {
+    logoutMutation.mutate()
+  }
+
+  // Don't wrap login page with AdminAuthWrapper
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
   const navItems = [
     {
       icon: <LayoutDashboard className="h-5 w-5" />,
       label: "Dashboard",
       href: "/admin/dashboard",
     },
-
-    {
-      icon: <DollarSign className="h-5 w-5" />,
-      label: "Finance",
-      href: "/admin/finance",
-    },
     {
       icon: <Users className="h-5 w-5" />,
       label: "Teachers",
       href: "/admin/teachers",
-    },
-    {
-      icon: <School className="h-5 w-5" />,
-      label: "Academics",
-      href: "/admin/academics",
     },
     {
       icon: <BookOpen className="h-5 w-5" />,
@@ -56,14 +64,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       href: "/admin/students",
     },
     {
-      icon: <Users className="h-5 w-5" />,
-      label: "Teachers",
-      href: "/admin/teachers",
+      icon: <GraduationCap className="h-5 w-5" />,
+      label: "Classrooms",
+      href: "/admin/classrooms",
+    },
+    {
+      icon: <School className="h-5 w-5" />,
+      label: "Subjects",
+      href: "/admin/subjects",
+    },
+    {
+      icon: <Building2 className="h-5 w-5" />,
+      label: "Departments",
+      href: "/admin/departments",
     },
     {
       icon: <User2 className="h-5 w-5" />,
       label: "Employee",
       href: "/admin/employee",
+    },
+    {
+      icon: <DollarSign className="h-5 w-5" />,
+      label: "Finance",
+      href: "/admin/finance",
     },
     {
       icon: <Award className="h-5 w-5" />,
@@ -83,7 +106,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <AdminAuthWrapper>
+      <div className="min-h-screen flex flex-col md:flex-row">
       {/* Sidebar */}
       <aside className="w-full md:w-64 border-r flex flex-col">
         <div className="p-4 border-b">
@@ -139,8 +163,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     <AvatarFallback>AD</AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium">Admin User</p>
-                    <p className="text-xs">admin@school.edu</p>
+                    <p className="text-sm font-medium">{user?.first_name} {user?.last_name}</p>
+                    <p className="text-xs">{user?.email}</p>
                   </div>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -162,13 +186,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     School Settings
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link
-                    href="/logout"
-                    className="flex items-center gap-2 w-full"
-                  >
-                    Logout
-                  </Link>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -178,6 +198,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         {/* Page content */}
         <div className="flex-1 overflow-auto p-4 md:p-6">{children}</div>
       </main>
-    </div>
+      </div>
+    </AdminAuthWrapper>
   );
 }

@@ -1,3 +1,9 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
 // Sample event data
 const events = [
   {
@@ -136,9 +142,9 @@ const getEventBadgeVariant = (type: string) => {
     case "sports":
       return "secondary";
     case "cultural":
-      return "success";
+      return "outline";
     case "holiday":
-      return "warning";
+      return "outline";
     default:
       return "outline";
   }
@@ -189,9 +195,15 @@ import {
   Check,
   X,
   ArrowUpDown,
+  Users,
+  Award,
+  Activity,
 } from "lucide-react";
 
 export default function AdminActivitiesPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("overview");
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -208,11 +220,73 @@ export default function AdminActivitiesPage() {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => router.push('/admin/activities/add')}
+          >
             <Plus className="h-4 w-4" />
             New Activity
           </Button>
         </div>
+      </div>
+
+      {/* Quick Navigation Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/admin/activities/events')}>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Calendar className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Events</h3>
+                <p className="text-sm text-muted-foreground">{events.length} upcoming</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/admin/activities/clubs')}>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Clubs</h3>
+                <p className="text-sm text-muted-foreground">{clubs.length} active</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/admin/activities/sports')}>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Award className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Sports Teams</h3>
+                <p className="text-sm text-muted-foreground">{sportsTeams.length} teams</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/admin/activities/participation')}>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Activity className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Participation</h3>
+                <p className="text-sm text-muted-foreground">{participationRecords.length} students</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="events" className="space-y-4">
@@ -288,11 +362,19 @@ export default function AdminActivitiesPage() {
                         <TableCell>{event.location}</TableCell>
                         <TableCell>{event.coordinator}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="ghost" size="sm">
-                            Edit
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => router.push(`/admin/activities/${event.id}/edit`)}
+                          >
+                            <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            Delete
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => router.push(`/admin/activities/${event.id}`)}
+                          >
+                            View
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -351,11 +433,19 @@ export default function AdminActivitiesPage() {
                           <TableCell>{club.schedule}</TableCell>
                           <TableCell>{club.members}</TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => router.push(`/admin/activities/${club.id}`)}
+                            >
                               View
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              Edit
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => router.push(`/admin/activities/${club.id}/edit`)}
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -387,11 +477,19 @@ export default function AdminActivitiesPage() {
                           <TableCell>{team.schedule}</TableCell>
                           <TableCell>{team.members}</TableCell>
                           <TableCell className="text-right space-x-2">
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => router.push(`/admin/activities/${team.id}`)}
+                            >
                               View
                             </Button>
-                            <Button variant="ghost" size="sm">
-                              Edit
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => router.push(`/admin/activities/${team.id}/edit`)}
+                            >
+                              <Edit className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -466,11 +564,19 @@ export default function AdminActivitiesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => router.push(`/admin/activities/participation/${record.id}`)}
+                        >
                           View
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          Edit
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => router.push(`/admin/activities/participation/${record.id}/edit`)}
+                        >
+                          <Edit className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>

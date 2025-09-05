@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -18,311 +17,232 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useCreateEmployee } from "@/hooks/use-employees";
+import { useDepartments } from "@/hooks/use-departments";
+import { useRouter } from "next/navigation";
 
-export default function EditStudentPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  // This would normally be fetched from an API
-  const student = {
-    id: params.id,
-    name: "Emma Johnson",
-    firstName: "Emma",
-    lastName: "Johnson",
-    studentId: "S2025-001",
-    grade: "Grade 10",
-    section: "A",
-    dateOfBirth: "2008-05-15",
-    gender: "Female",
-    address: "123 School Lane, Cityville, State 12345",
-    email: "emma.johnson@school.edu",
-    phone: "+1 (555) 123-4567",
-    parentName: "Robert & Sarah Johnson",
-    parentEmail: "rjohnson@example.com",
-    parentPhone: "+1 (555) 987-6543",
-    enrollmentDate: "2020-09-01",
-    status: "Active",
-    bloodGroup: "O+",
-    emergencyContact: "Sarah Johnson (+1 555-987-6543)",
-    medicalConditions:
-      "Mild asthma, requires inhaler during physical activities",
-  };
+export default function AddEmployeePage() {
+  const router = useRouter()
+  const { data: departments } = useDepartments()
+  const createEmployee = useCreateEmployee()
+
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    position: "",
+    role: "teacher",
+    status: "active",
+    join_date: "",
+    department: "",
+    teacher_room: "",
+    about: "",
+    education: "",
+    skills: "",
+    experience: "",
+    certification: "",
+    salary: "",
+    address: "",
+    emergency_contact: "",
+    emergency_phone: "",
+  })
+
+  const onChange = (key: keyof typeof form, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const errors = useMemo(() => {
+    const e: Record<string, string> = {}
+    if (!form.name.trim()) e.name = 'Name is required'
+    if (!form.email.trim() || !form.email.includes('@')) e.email = 'Valid email is required'
+    if (!form.phone.trim()) e.phone = 'Phone is required'
+    if (!form.position.trim()) e.position = 'Position is required'
+    if (!form.role) e.role = 'Role is required'
+    if (!form.status) e.status = 'Status is required'
+    if (!form.join_date) e.join_date = 'Join date is required'
+    if (form.role === 'teacher' && !form.teacher_room.trim()) e.teacher_room = 'Teacher room is required for teachers'
+    return e
+  }, [form])
+
+  const onSubmit = async () => {
+    if (Object.keys(errors).length > 0) return
+    const payload: any = {
+      ...form,
+      salary: form.salary ? Number(form.salary) : undefined,
+      department: form.department || null,
+    }
+    await createEmployee.mutateAsync(payload as any)
+    router.push("/admin/employee")
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" asChild>
-            <Link href={`/admin/students/${params.id}/profile`}>
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back</span>
-            </Link>
+        <h1 className="text-2xl font-bold">Add Employee</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/employee">Cancel</Link>
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Edit Student</h1>
+          <Button onClick={onSubmit} disabled={createEmployee.isLoading}>
+            <Save className="mr-2 h-4 w-4" />
+            {createEmployee.isLoading ? "Saving..." : "Save"}
+          </Button>
         </div>
-        <Button>
-          <Save className="mr-2 h-4 w-4" />
-          Save Changes
-        </Button>
       </div>
-
-      <Tabs defaultValue="personal" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="personal">Personal Information</TabsTrigger>
-          <TabsTrigger value="contact">Contact Information</TabsTrigger>
-          <TabsTrigger value="academic">Academic Details</TabsTrigger>
-          <TabsTrigger value="medical">Medical Information</TabsTrigger>
-        </TabsList>
-        <TabsContent value="personal" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Details</CardTitle>
-              <CardDescription>
-                Update the student's personal information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" defaultValue={student.firstName} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" defaultValue={student.lastName} />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID</Label>
-                  <Input id="studentId" defaultValue={student.studentId} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    defaultValue={student.dateOfBirth}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select defaultValue={student.gender.toLowerCase()}>
-                    <SelectTrigger id="gender">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bloodGroup">Blood Group</Label>
-                  <Select defaultValue={student.bloodGroup}>
-                    <SelectTrigger id="bloodGroup">
-                      <SelectValue placeholder="Select blood group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A+">A+</SelectItem>
-                      <SelectItem value="A-">A-</SelectItem>
-                      <SelectItem value="B+">B+</SelectItem>
-                      <SelectItem value="B-">B-</SelectItem>
-                      <SelectItem value="AB+">AB+</SelectItem>
-                      <SelectItem value="AB-">AB-</SelectItem>
-                      <SelectItem value="O+">O+</SelectItem>
-                      <SelectItem value="O-">O-</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea id="address" defaultValue={student.address} />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="contact" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-              <CardDescription>
-                Update the student's and parent's contact details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Student Email</Label>
-                <Input id="email" type="email" defaultValue={student.email} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Student Phone</Label>
-                <Input id="phone" defaultValue={student.phone} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="parentName">Parent/Guardian Name</Label>
-                <Input id="parentName" defaultValue={student.parentName} />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="parentEmail">Parent/Guardian Email</Label>
-                  <Input
-                    id="parentEmail"
-                    type="email"
-                    defaultValue={student.parentEmail}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="parentPhone">Parent/Guardian Phone</Label>
-                  <Input id="parentPhone" defaultValue={student.parentPhone} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Emergency Contact</Label>
-                <Input
-                  id="emergencyContact"
-                  defaultValue={student.emergencyContact}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="academic" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Academic Information</CardTitle>
-              <CardDescription>
-                Update the student's academic details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="grade">Grade/Class</Label>
-                  <Select
-                    defaultValue={student.grade.replace("Grade ", "grade")}
-                  >
-                    <SelectTrigger id="grade">
-                      <SelectValue placeholder="Select grade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="grade1">Grade 1</SelectItem>
-                      <SelectItem value="grade2">Grade 2</SelectItem>
-                      <SelectItem value="grade3">Grade 3</SelectItem>
-                      <SelectItem value="grade4">Grade 4</SelectItem>
-                      <SelectItem value="grade5">Grade 5</SelectItem>
-                      <SelectItem value="grade6">Grade 6</SelectItem>
-                      <SelectItem value="grade7">Grade 7</SelectItem>
-                      <SelectItem value="grade8">Grade 8</SelectItem>
-                      <SelectItem value="grade9">Grade 9</SelectItem>
-                      <SelectItem value="grade10">Grade 10</SelectItem>
-                      <SelectItem value="grade11">Grade 11</SelectItem>
-                      <SelectItem value="grade12">Grade 12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="section">Section</Label>
-                  <Select defaultValue={student.section.toLowerCase()}>
-                    <SelectTrigger id="section">
-                      <SelectValue placeholder="Select section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="a">Section A</SelectItem>
-                      <SelectItem value="b">Section B</SelectItem>
-                      <SelectItem value="c">Section C</SelectItem>
-                      <SelectItem value="d">Section D</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="enrollmentDate">Enrollment Date</Label>
-                  <Input
-                    id="enrollmentDate"
-                    type="date"
-                    defaultValue={student.enrollmentDate}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select defaultValue={student.status.toLowerCase()}>
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
-                      <SelectItem value="graduated">Graduated</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="medical" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Medical Information</CardTitle>
-              <CardDescription>
-                Update the student's medical details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="medicalConditions">Medical Conditions</Label>
-                <Textarea
-                  id="medicalConditions"
-                  defaultValue={student.medicalConditions}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies</Label>
-                <Textarea
-                  id="allergies"
-                  placeholder="List any allergies the student has"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="medications">Current Medications</Label>
-                <Textarea
-                  id="medications"
-                  placeholder="List any medications the student is taking"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
 
       <Card>
         <CardHeader>
-          <CardTitle>Additional Notes</CardTitle>
-          <CardDescription>
-            Any other relevant information about the student
-          </CardDescription>
+          <CardTitle>Basic Information</CardTitle>
+          <CardDescription>Core details required to create an employee</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Enter any additional notes or comments about the student"
-            className="min-h-[100px]"
-          />
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" value={form.name} onChange={(e) => onChange("name", e.target.value)} />
+              {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={form.email} onChange={(e) => onChange("email", e.target.value)} />
+              {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" value={form.phone} onChange={(e) => onChange("phone", e.target.value)} />
+              {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="position">Position</Label>
+              <Input id="position" value={form.position} onChange={(e) => onChange("position", e.target.value)} />
+              {errors.position && <p className="text-sm text-red-600">{errors.position}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={form.role} onValueChange={(v) => onChange("role", v)}>
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="principal">Principal</SelectItem>
+                  <SelectItem value="vice_principal">Vice Principal</SelectItem>
+                  <SelectItem value="coordinator">Coordinator</SelectItem>
+                  <SelectItem value="librarian">Librarian</SelectItem>
+                  <SelectItem value="counselor">Counselor</SelectItem>
+                  <SelectItem value="nurse">Nurse</SelectItem>
+                  <SelectItem value="security">Security</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="cleaner">Cleaner</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.role && <p className="text-sm text-red-600">{errors.role}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={form.status} onValueChange={(v) => onChange("status", v)}>
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && <p className="text-sm text-red-600">{errors.status}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="join_date">Join Date</Label>
+              <Input id="join_date" type="date" value={form.join_date} onChange={(e) => onChange("join_date", e.target.value)} />
+              {errors.join_date && <p className="text-sm text-red-600">{errors.join_date}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select value={form.department} onValueChange={(v) => onChange("department", v)}>
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(departments || []).map((d) => (
+                    <SelectItem key={d.d_name} value={d.d_name}>{d.d_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="teacher_room">Teacher Room</Label>
+              <Input id="teacher_room" value={form.teacher_room} onChange={(e) => onChange("teacher_room", e.target.value)} />
+              {errors.teacher_room && <p className="text-sm text-red-600">{errors.teacher_room}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="salary">Salary</Label>
+              <Input id="salary" type="number" value={form.salary} onChange={(e) => onChange("salary", e.target.value)} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Additional Information</CardTitle>
+          <CardDescription>Optional profile details</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea id="address" value={form.address} onChange={(e) => onChange("address", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="about">About</Label>
+              <Textarea id="about" value={form.about} onChange={(e) => onChange("about", e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="education">Education</Label>
+              <Textarea id="education" value={form.education} onChange={(e) => onChange("education", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="skills">Skills</Label>
+              <Textarea id="skills" value={form.skills} onChange={(e) => onChange("skills", e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="experience">Experience</Label>
+              <Textarea id="experience" value={form.experience} onChange={(e) => onChange("experience", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="certification">Certification</Label>
+              <Textarea id="certification" value={form.certification} onChange={(e) => onChange("certification", e.target.value)} />
+            </div>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" asChild>
-            <Link href={`/admin/students/${params.id}/profile`}>Cancel</Link>
-          </Button>
-          <Button>Save Changes</Button>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 w-full">
+            <div className="space-y-2">
+              <Label htmlFor="emergency_contact">Emergency Contact</Label>
+              <Input id="emergency_contact" value={form.emergency_contact} onChange={(e) => onChange("emergency_contact", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emergency_phone">Emergency Phone</Label>
+              <Input id="emergency_phone" value={form.emergency_phone} onChange={(e) => onChange("emergency_phone", e.target.value)} />
+            </div>
+          </div>
         </CardFooter>
       </Card>
     </div>

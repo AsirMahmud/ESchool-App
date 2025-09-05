@@ -42,11 +42,37 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import { useSubjects, useDeleteSubject } from "@/hooks/use-subjects";
 
 export default function SubjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [selectedGradeLevel, setSelectedGradeLevel] = useState("all");
+  
+  const { data: subjects, isLoading, error } = useSubjects()
+  const deleteSubjectMutation = useDeleteSubject()
+
+  const handleDeleteSubject = (id: number) => {
+    if (confirm('Are you sure you want to delete this subject?')) {
+      deleteSubjectMutation.mutate(id)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading subjects...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-red-600">Error loading subjects: {error.message}</div>
+      </div>
+    )
+  }
 
   // Sample subjects data
   const subjectsData = [
