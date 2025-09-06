@@ -1,6 +1,55 @@
 import { useApiQuery, useApiMutation } from './use-api'
 import { api, endpoints } from '@/lib/api'
 
+export interface ClassScheduleItem {
+  id: number
+  class_room: number
+  class_room_name: string
+  day_of_week: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+  start_time: string
+  end_time: string
+  subject: string
+  subject_name: string
+  teacher: number
+  teacher_name: string
+  level: number
+  level_name: string
+  section?: number
+  section_name?: string
+  is_active: boolean
+  academic_year: string
+}
+
+export function useClassSchedules(filters?: {
+  level?: number | string
+  section?: number | string
+  teacher?: number | string
+  subject?: string
+  is_active?: boolean
+}) {
+  return useApiQuery<ClassScheduleItem[]>(
+    ['class-schedules', filters],
+    async () => {
+      const params = new URLSearchParams()
+      if (filters?.level) params.append('level', String(filters.level))
+      if (filters?.section) params.append('section', String(filters.section))
+      if (filters?.teacher) params.append('teacher', String(filters.teacher))
+      if (filters?.subject) params.append('subject', String(filters.subject))
+      if (filters?.is_active !== undefined) params.append('is_active', String(filters.is_active))
+
+      const endpoint = params.toString()
+        ? `${endpoints.classSchedules}?${params.toString()}`
+        : endpoints.classSchedules
+
+      const data: any = await api.get(endpoint)
+      if (Array.isArray(data)) return data as ClassScheduleItem[]
+      if (data && Array.isArray(data.results)) return data.results as ClassScheduleItem[]
+      return []
+    },
+    { staleTime: 1000 * 60 * 2 }
+  )
+}
+
 // Types
 export interface Class {
   id: number
@@ -86,7 +135,7 @@ export function useUpdateClass() {
   return useApiMutation<Class, UpdateClassData>(
     (data) => api.put(endpoints.class(data.id), data),
     {
-      invalidateQueries: [['classes'], ['class', data => data.id.toString()]],
+      invalidateQueries: [['classes'], ['class']],
       onSuccess: (data) => {
         console.log('Class updated successfully:', data)
       },

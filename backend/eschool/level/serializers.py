@@ -120,7 +120,8 @@ class SectionSubjectSerializer(serializers.ModelSerializer):
     level = serializers.IntegerField(source='section.level.level_no', read_only=True)
     subject_name = serializers.CharField(source='subject.s_name', read_only=True)
     subject_code = serializers.CharField(source='subject.s_code', read_only=True)
-    teacher_name = serializers.CharField(source='teacher.teacher_name', read_only=True)
+    # Use the employee name referenced by teacher.teacher_id
+    teacher_name = serializers.CharField(source='teacher.teacher_id.name', read_only=True)
 
     class Meta:
         model = SectionSubject

@@ -58,7 +58,7 @@ export default function AccountantLayout({
                 href="/accountant/fee-management"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-600 hover:text-blue-600 hover:underline"
               >
-                Fee Management
+                Student Payments
               </Link>
               <Link
                 href="/accountant/expenses"
@@ -70,7 +70,7 @@ export default function AccountantLayout({
                 href="/accountant/payroll"
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-600 hover:text-blue-600 hover:underline"
               >
-                Payroll
+                Employee Salaries
               </Link>
               
               <Link
@@ -151,7 +151,7 @@ export default function AccountantLayout({
               href="/accountant/fee-management"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-blue-600"
             >
-              Fee Management
+              Student Payments
             </Link>
             <Link
               href="/accountant/expenses"
@@ -163,7 +163,7 @@ export default function AccountantLayout({
               href="/accountant/payroll"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-600 transition-all hover:text-blue-600"
             >
-              Payroll
+              Employee Salaries
             </Link>
             <Link
               href="/accountant/reports"

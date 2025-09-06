@@ -163,6 +163,9 @@ export const endpoints = {
   // Classes
   classes: '/classes/',
   class: (id: string | number) => `/classes/${id}/`,
+  // Class schedules
+  classSchedules: '/class-schedules/',
+  classSchedule: (id: string | number) => `/class-schedules/${id}/`,
   
   // Subjects
   subjects: '/subjects/',

@@ -279,3 +279,137 @@ class Experience(models.Model):
     def is_current(self):
         """Check if this is the current department"""
         return self.end_date is None
+
+
+class EmployeeSalary(models.Model):
+    """Employee salary management"""
+    
+    SALARY_STATUS = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('cancelled', 'Cancelled'),
+        ('on_hold', 'On Hold'),
+    ]
+    
+    SALARY_TYPES = [
+        ('monthly', 'Monthly Salary'),
+        ('bonus', 'Bonus'),
+        ('overtime', 'Overtime'),
+        ('allowance', 'Allowance'),
+        ('deduction', 'Deduction'),
+        ('other', 'Other'),
+    ]
+    
+    sal_id = models.AutoField(primary_key=True)
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='salary_records',
+        help_text="Employee receiving the salary"
+    )
+    salary_type = models.CharField(
+        max_length=20,
+        choices=SALARY_TYPES,
+        default='monthly',
+        help_text="Type of salary payment"
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Salary amount"
+    )
+    month = models.CharField(
+        max_length=20,
+        help_text="Month for this salary (e.g., 'January 2025')"
+    )
+    pay_date = models.DateField(
+        help_text="Scheduled payment date"
+    )
+    paid_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Actual payment date"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=SALARY_STATUS,
+        default='pending',
+        help_text="Payment status"
+    )
+    basic_salary = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Basic salary amount"
+    )
+    allowances = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Total allowances"
+    )
+    deductions = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Total deductions"
+    )
+    overtime_hours = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Overtime hours worked"
+    )
+    overtime_rate = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0.00,
+        help_text="Overtime rate per hour"
+    )
+    tax_deduction = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Tax deduction amount"
+    )
+    net_salary = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Net salary after all calculations"
+    )
+    notes = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Additional notes for this salary payment"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'employee_salaries'
+        ordering = ['-pay_date']
+        verbose_name = 'Employee Salary'
+        verbose_name_plural = 'Employee Salaries'
+        unique_together = ['employee', 'month', 'salary_type']
+    
+    def __str__(self):
+        return f"{self.employee.name} - {self.month} ({self.amount})"
+    
+    def save(self, *args, **kwargs):
+        """Calculate net salary before saving"""
+        overtime_amount = self.overtime_hours * self.overtime_rate
+        gross_salary = self.basic_salary + self.allowances + overtime_amount
+        self.net_salary = gross_salary - self.deductions - self.tax_deduction
+        self.amount = self.net_salary
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_overdue(self):
+        """Check if salary payment is overdue"""
+        from datetime import date
+        return self.status == 'pending' and self.pay_date < date.today()
+    
+    @property
+    def gross_salary(self):
+        """Calculate gross salary"""
+        overtime_amount = self.overtime_hours * self.overtime_rate
+        return self.basic_salary + self.allowances + overtime_amount

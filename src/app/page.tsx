@@ -1,3 +1,8 @@
+'use client'
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStatus } from "@/hooks/use-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -22,6 +27,33 @@ import {
 
 
 export default function LoginSelectionPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStatus();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show content if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const loginOptions = [
     {
       title: "Admin",

@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation } from './use-api'
 import { api, endpoints } from '@/lib/api'
+import { useAuth } from '@/components/providers/auth-provider'
 
 // Types
 export interface Teacher {
@@ -40,15 +41,17 @@ export interface TeacherDetail extends Teacher {
 
 export interface TeacherSubject {
   id: number
-  teacher: number
-  teacher_name: string
-  subject: number
+  teacher?: number
+  teacher_name?: string
+  subject: number | string
   subject_name: string
   subject_code: string
   is_active: boolean
   start_date: string
-  end_date?: string
-  created_at: string
+  end_date?: string | null
+  created_at?: string
+  section_name?: string
+  section_id?: number
 }
 
 export interface TeacherClass {
@@ -132,6 +135,37 @@ export interface CreateTeacherPerformanceData {
 }
 
 // Hooks
+
+// Get current teacher based on authenticated user
+export function useCurrentTeacher() {
+  const { user } = useAuth()
+  
+  return useApiQuery<TeacherDetail>(
+    ['current-teacher', user?.id?.toString() || ''],
+    async () => {
+      // First get all teachers and find the one with matching user
+      const teachers: any = await api.get(endpoints.teachers)
+      const teachersList = Array.isArray(teachers) ? teachers : teachers.results || []
+      
+      // Find teacher where the user_id matches the current user
+      const currentTeacher = teachersList.find((teacher: any) => {
+        return teacher.user_id === user?.id
+      })
+      
+      if (currentTeacher) {
+        // Get full teacher details
+        return api.get(endpoints.teacher(currentTeacher.teacher_id || currentTeacher.id))
+      }
+      
+      throw new Error('No teacher record found for current user')
+    },
+    {
+      enabled: !!user && user.role === 'teacher',
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }
+  )
+}
+
 export function useTeachers() {
   return useApiQuery<Teacher[]>(
     ['teachers'],
@@ -205,10 +239,10 @@ export function useDeleteTeacher() {
 }
 
 // Teacher Subjects
-export function useTeacherSubjects(teacherId: number | string) {
+export function useTeacherSubjects(teacherId: number | string | undefined) {
   return useApiQuery<TeacherSubject[]>(
-    ['teacher', teacherId.toString(), 'subjects'],
-    () => api.get(`${endpoints.teacher(teacherId)}subjects/`),
+    ['teacher', teacherId?.toString() || '', 'subjects'],
+    () => api.get(`${endpoints.teacher(teacherId!)}subjects/`),
     {
       enabled: !!teacherId,
       staleTime: 1000 * 60 * 5,
@@ -232,10 +266,10 @@ export function useAddTeacherSubject() {
 }
 
 // Teacher Classes
-export function useTeacherClasses(teacherId: number | string) {
+export function useTeacherClasses(teacherId: number | string | undefined) {
   return useApiQuery<TeacherClass[]>(
-    ['teacher', teacherId.toString(), 'classes'],
-    () => api.get(`${endpoints.teacher(teacherId)}classes/`),
+    ['teacher', teacherId?.toString() || '', 'classes'],
+    () => api.get(`${endpoints.teacher(teacherId!)}classes/`),
     {
       enabled: !!teacherId,
       staleTime: 1000 * 60 * 5,
@@ -259,10 +293,10 @@ export function useAddTeacherClass() {
 }
 
 // Teacher Performance
-export function useTeacherPerformance(teacherId: number | string) {
+export function useTeacherPerformance(teacherId: number | string | undefined) {
   return useApiQuery<TeacherPerformance[]>(
-    ['teacher', teacherId.toString(), 'performance'],
-    () => api.get(`${endpoints.teacher(teacherId)}/performance/`),
+    ['teacher', teacherId?.toString() || '', 'performance'],
+    () => api.get(`${endpoints.teacher(teacherId!)}/performance/`),
     {
       enabled: !!teacherId,
       staleTime: 1000 * 60 * 5,

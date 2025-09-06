@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation, useOptimisticMutation } from './use-api'
 import { api, endpoints } from '@/lib/api'
+import { useAuth } from '@/components/providers/auth-provider'
 
 // Types
 export interface Student {
@@ -107,6 +108,34 @@ export interface StudentDetail extends Student {
   activities: StudentActivity[]
   diary_entries: StudentDiary[]
   scholarships: StudentScholarship[]
+}
+
+export interface StudentSubject {
+  id: number
+  source: 'section' | 'level'
+  section: number | null
+  section_name: string
+  level: number | null
+  subject: string
+  subject_name: string
+  subject_code: string
+  teacher: number | null
+  teacher_name: string
+  is_active: boolean
+}
+
+export interface StudentTeacher {
+  teacher_id: number
+  teacher_name: string
+  teacher_email?: string
+  teacher_phone?: string
+  section_id?: number
+  section_name?: string
+  subjects: Array<{
+    subject: string
+    subject_name: string
+    subject_code: string
+  }>
 }
 
 export interface CreateStudentData {
@@ -318,6 +347,48 @@ export function useStudentDetail(id: string) {
       enabled: !!id,
       staleTime: 1000 * 60 * 5, // 5 minutes
     }
+  )
+}
+
+// Student Subjects Hook (section-first, level fallback)
+export function useStudentSubjects(studentId: string | undefined) {
+  return useApiQuery<StudentSubject[]>(
+    ['student-subjects', studentId || ''],
+    async () => {
+      if (!studentId) return []
+      const base = endpoints.students.endsWith('/') ? endpoints.students : `${endpoints.students}/`
+      const endpoint = `${base}${studentId}/subjects/`
+      const data: any = await api.get(endpoint)
+      if (Array.isArray(data)) return data as StudentSubject[]
+      if (data && Array.isArray(data.results)) return data.results as StudentSubject[]
+      return []
+    },
+    { enabled: !!studentId, staleTime: 1000 * 60 * 5 }
+  )
+}
+
+// Student Teachers Hook (from section subject assignments)
+export function useStudentTeachers(studentId: string | undefined) {
+  return useApiQuery<StudentTeacher[]>(
+    ['student-teachers', studentId || ''],
+    async () => {
+      if (!studentId) return []
+      const base = endpoints.students.endsWith('/') ? endpoints.students : `${endpoints.students}/`
+      const endpoint = `${base}${studentId}/teachers/`
+      const data: any = await api.get(endpoint)
+      
+      // Handle the new response structure with debug info
+      if (data && data.teachers && Array.isArray(data.teachers)) {
+        console.log('Teachers API response:', data)
+        return data.teachers as StudentTeacher[]
+      }
+      
+      // Fallback to old structure
+      if (Array.isArray(data)) return data as StudentTeacher[]
+      if (data && Array.isArray(data.results)) return data.results as StudentTeacher[]
+      return []
+    },
+    { enabled: !!studentId, staleTime: 1000 * 60 * 5 }
   )
 }
 
@@ -616,4 +687,101 @@ export function useStudentStatistics() {
   )
 }
 
+// Get students by section
+export function useStudentsBySection(sectionId: number | string | undefined) {
+  return useApiQuery<Student[]>(
+    ['students-by-section', sectionId?.toString() || ''],
+    async () => {
+      if (!sectionId) return []
+      
+      try {
+        const data: any = await api.get(`${endpoints.students}?section=${sectionId}`)
+        
+        // Handle DRF pagination { count, next, previous, results }
+        if (Array.isArray(data)) return data as Student[]
+        if (data && Array.isArray(data.results)) return data.results as Student[]
+        return []
+      } catch (error) {
+        console.error('Error fetching students by section:', error)
+        return []
+      }
+    },
+    {
+      enabled: !!sectionId,
+      staleTime: 1000 * 60 * 2, // 2 minutes
+    }
+  )
+}
+
+// Get students with their parents by section
+export function useStudentsWithParentsBySection(sectionId: number | string | undefined) {
+  return useApiQuery<(Student & { parents: StudentParent[] })[]>(
+    ['students-with-parents-by-section', sectionId?.toString() || ''],
+    async () => {
+      if (!sectionId) return []
+      
+      try {
+        // Get students in the section
+        const studentsData: any = await api.get(`${endpoints.students}?section=${sectionId}`)
+        let students: Student[] = []
+        
+        if (Array.isArray(studentsData)) {
+          students = studentsData as Student[]
+        } else if (studentsData && Array.isArray(studentsData.results)) {
+          students = studentsData.results as Student[]
+        }
+        
+        // For each student, get their parents
+        const studentsWithParents = await Promise.all(
+          students.map(async (student) => {
+            try {
+              const parentsData: any = await api.get(`${endpoints.student(student.s_id)}parents/`)
+              const parents = Array.isArray(parentsData) ? parentsData : (parentsData.results || [])
+              return { ...student, parents }
+            } catch (error) {
+              console.error(`Error fetching parents for student ${student.s_id}:`, error)
+              return { ...student, parents: [] }
+            }
+          })
+        )
+        
+        return studentsWithParents
+      } catch (error) {
+        console.error('Error fetching students with parents by section:', error)
+        return []
+      }
+    },
+    {
+      enabled: !!sectionId,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }
+  )
+}
+
+
+// Get the current logged-in student's record based on the authenticated user's email
+export function useCurrentStudent() {
+  const { user } = useAuth()
+
+  return useApiQuery<Student>(
+    ['current-student', user?.email || ''],
+    async () => {
+      // Fetch students filtered via search; then match exact email
+      const query = user?.email ? `?search=${encodeURIComponent(user.email)}` : ''
+      const data: any = await api.get(`${endpoints.students}${query}`)
+
+      const list: Student[] = Array.isArray(data)
+        ? (data as Student[])
+        : (Array.isArray(data?.results) ? (data.results as Student[]) : [])
+
+      const match = list.find(s => s.email?.toLowerCase() === (user?.email || '').toLowerCase())
+      if (match) return match
+      throw new Error('No student record found for current user')
+    },
+    {
+      enabled: !!user && user.role === 'student',
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+}
 

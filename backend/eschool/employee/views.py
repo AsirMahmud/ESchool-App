@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 
-from .models import Employee, EmployeeAttendance, Experience
+from .models import Employee, EmployeeAttendance, Experience, EmployeeSalary
 from .serializers import (
     EmployeeSerializer, EmployeeDetailSerializer, EmployeeListSerializer,
-    EmployeeAttendanceSerializer, ExperienceSerializer
+    EmployeeAttendanceSerializer, ExperienceSerializer, EmployeeSalarySerializer
 )
 
 
@@ -51,6 +51,24 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         """Mark attendance for an employee"""
         employee = self.get_object()
         serializer = EmployeeAttendanceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(employee=employee)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def salary_records(self, request, pk=None):
+        """Get salary records for a specific employee"""
+        employee = self.get_object()
+        salaries = employee.salary_records.all()
+        serializer = EmployeeSalarySerializer(salaries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def add_salary(self, request, pk=None):
+        """Add a salary record for an employee"""
+        employee = self.get_object()
+        serializer = EmployeeSalarySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(employee=employee)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -156,3 +174,96 @@ class ExperienceViewSet(viewsets.ModelViewSet):
     search_fields = ['employee__name', 'department__d_name', 'position']
     ordering_fields = ['start_date', 'end_date']
     ordering = ['-start_date']
+
+
+class EmployeeSalaryViewSet(viewsets.ModelViewSet):
+    """ViewSet for EmployeeSalary model"""
+    
+    queryset = EmployeeSalary.objects.all()
+    serializer_class = EmployeeSalarySerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['employee', 'salary_type', 'status', 'month']
+    search_fields = ['employee__name', 'employee__position', 'month']
+    ordering_fields = ['pay_date', 'paid_date', 'amount']
+    ordering = ['-pay_date']
+    
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """Get pending salary payments"""
+        pending_salaries = EmployeeSalary.objects.filter(status='pending')
+        serializer = EmployeeSalarySerializer(pending_salaries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def overdue(self, request):
+        """Get overdue salary payments"""
+        from datetime import date
+        overdue_salaries = EmployeeSalary.objects.filter(
+            status='pending', pay_date__lt=date.today()
+        )
+        serializer = EmployeeSalarySerializer(overdue_salaries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def mark_paid(self, request, pk=None):
+        """Mark a salary payment as paid"""
+        from datetime import date
+        salary = self.get_object()
+        salary.status = 'paid'
+        salary.paid_date = date.today()
+        salary.save()
+        serializer = EmployeeSalarySerializer(salary)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get salary payment summary"""
+        from django.db.models import Sum, Count
+        from datetime import date
+        
+        today = date.today()
+        
+        summary = {
+            'total_salaries': EmployeeSalary.objects.count(),
+            'total_amount': EmployeeSalary.objects.aggregate(Sum('amount'))['amount__sum'] or 0,
+            'paid_amount': EmployeeSalary.objects.filter(status='paid').aggregate(Sum('amount'))['amount__sum'] or 0,
+            'pending_amount': EmployeeSalary.objects.filter(status='pending').aggregate(Sum('amount'))['amount__sum'] or 0,
+            'overdue_count': EmployeeSalary.objects.filter(
+                status='pending', pay_date__lt=today
+            ).count(),
+            'by_status': list(EmployeeSalary.objects.values('status').annotate(
+                count=Count('id'),
+                total=Sum('amount')
+            )),
+            'by_department': list(EmployeeSalary.objects.values(
+                'employee__department__d_name'
+            ).annotate(
+                count=Count('id'),
+                total=Sum('amount')
+            )),
+        }
+        return Response(summary)
+    
+    @action(detail=False, methods=['get'])
+    def monthly_summary(self, request):
+        """Get monthly salary summary"""
+        from django.db.models import Sum, Count
+        
+        month = request.query_params.get('month')
+        if not month:
+            return Response({'error': 'Month parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        monthly_salaries = EmployeeSalary.objects.filter(month=month)
+        
+        summary = {
+            'month': month,
+            'total_employees': monthly_salaries.values('employee').distinct().count(),
+            'total_amount': monthly_salaries.aggregate(Sum('amount'))['amount__sum'] or 0,
+            'paid_amount': monthly_salaries.filter(status='paid').aggregate(Sum('amount'))['amount__sum'] or 0,
+            'pending_amount': monthly_salaries.filter(status='pending').aggregate(Sum('amount'))['amount__sum'] or 0,
+            'by_type': list(monthly_salaries.values('salary_type').annotate(
+                count=Count('id'),
+                total=Sum('amount')
+            )),
+        }
+        return Response(summary)

@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation } from './use-api'
 import { api, endpoints } from '@/lib/api'
+import { useAuth } from '@/components/providers/auth-provider'
 
 export interface Parent {
   p_id: number
@@ -131,6 +132,32 @@ export function useParentPayments(parentId: number | string) {
     ['parent', parentId.toString(), 'payments'],
     () => api.get(`${endpoints.parent(parentId)}payments/`),
     { enabled: !!parentId, staleTime: 1000 * 60 * 5 }
+  )
+}
+
+// Get the current logged-in parent's record based on the authenticated user's email
+export function useCurrentParent() {
+  const { user } = useAuth()
+
+  return useApiQuery<Parent>(
+    ['current-parent', user?.email || ''],
+    async () => {
+      // Fetch parents filtered via search; then match exact email
+      const query = user?.email ? `?search=${encodeURIComponent(user.email)}` : ''
+      const data: any = await api.get(`${endpoints.parents}${query}`)
+
+      const list: Parent[] = Array.isArray(data)
+        ? (data as Parent[])
+        : (Array.isArray(data?.results) ? (data.results as Parent[]) : [])
+
+      const match = list.find(p => p.email?.toLowerCase() === (user?.email || '').toLowerCase())
+      if (match) return match
+      throw new Error('No parent record found for current user')
+    },
+    {
+      enabled: !!user && user.role === 'parent',
+      staleTime: 1000 * 60 * 5,
+    }
   )
 }
 

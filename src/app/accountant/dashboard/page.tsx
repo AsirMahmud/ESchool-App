@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -18,8 +19,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePaymentSummary } from "@/hooks/use-payments";
+import { useSalarySummary } from "@/hooks/use-salaries";
 
 export default function AccountantDashboard() {
+  const { data: paymentSummary } = usePaymentSummary();
+  const { data: salarySummary } = useSalarySummary();
+
+  const totalRevenue = paymentSummary?.paid_amount || 0;
+  const pendingFees = paymentSummary?.pending_amount || 0;
+  const totalExpenses = salarySummary?.paid_amount || 0;
+  const pendingPayroll = salarySummary?.pending_amount || 0;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -38,9 +49,9 @@ export default function AccountantDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$128,430</div>
+            <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              +12.5% from last month
+              Student payments received
             </p>
           </CardContent>
         </Card>
@@ -50,35 +61,35 @@ export default function AccountantDashboard() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$42,580</div>
+            <div className="text-2xl font-bold">${pendingFees.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              32 students with outstanding balance
+              {paymentSummary?.overdue_count || 0} overdue payments
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Expenses
+              Salary Expenses
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$78,250</div>
+            <div className="text-2xl font-bold">${totalExpenses.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              -4.2% from last month
+              Employee salaries paid
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Payroll</CardTitle>
+            <CardTitle className="text-sm font-medium">Pending Payroll</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$65,840</div>
+            <div className="text-2xl font-bold">${pendingPayroll.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              Next payroll in 8 days
+              {salarySummary?.overdue_count || 0} overdue salaries
             </p>
           </CardContent>
         </Card>

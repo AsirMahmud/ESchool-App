@@ -88,6 +88,19 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Custom JWT token serializer to handle User model fields"""
     
+    username_field = 'email'  # Use email instead of username
+    
+    def validate(self, attrs):
+        # Use email as username for authentication
+        email = attrs.get('email')
+        password = attrs.get('password')
+        
+        if email and password:
+            # Override the username field temporarily
+            attrs[self.username_field] = email
+            
+        return super().validate(attrs)
+    
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

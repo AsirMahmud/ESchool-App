@@ -24,7 +24,7 @@ from rest_framework_simplejwt.views import (
 
 # Import all viewsets
 from department.views import DepartmentViewSet, FinanceViewSet
-from employee.views import EmployeeViewSet, EmployeeAttendanceViewSet, ExperienceViewSet
+from employee.views import EmployeeViewSet, EmployeeAttendanceViewSet, ExperienceViewSet, EmployeeSalaryViewSet
 from teacher.views import TeacherViewSet, TeacherSubjectViewSet, TeacherClassViewSet, TeacherPerformanceViewSet
 from student.views import StudentViewSet, StudentParentViewSet, StudentActivityViewSet, StudentDiaryViewSet, ScholarshipViewSet, StudentScholarshipViewSet
 from level.views import LevelViewSet, SectionViewSet, LevelSubjectViewSet, SectionSubjectViewSet
@@ -33,6 +33,7 @@ from classroom.views import ClassViewSet, ClassScheduleViewSet, ClassBookingView
 from parent.views import ParentViewSet, PaymentViewSet, PaymentHistoryViewSet
 from events.views import EventViewSet, EventParticipantViewSet, EventResourceViewSet
 from admission_office.views import ExamViewSet, ExamResultViewSet, AttendanceViewSet, AdmissionViewSet
+from finance.views import FinancialTransactionViewSet, FinancialSummaryViewSet, BudgetViewSet
 
 # Create router and register viewsets
 router = DefaultRouter()
@@ -44,6 +45,7 @@ router.register(r'finances', FinanceViewSet)
 # Employee routes
 router.register(r'employees', EmployeeViewSet)
 router.register(r'employee-attendance', EmployeeAttendanceViewSet)
+router.register(r'employee-salaries', EmployeeSalaryViewSet)
 router.register(r'experiences', ExperienceViewSet)
 
 # Teacher routes
@@ -91,6 +93,11 @@ router.register(r'exams', ExamViewSet)
 router.register(r'exam-results', ExamResultViewSet)
 router.register(r'attendance', AttendanceViewSet)
 router.register(r'admissions', AdmissionViewSet)
+
+# Finance routes
+router.register(r'financial-transactions', FinancialTransactionViewSet)
+router.register(r'financial-summaries', FinancialSummaryViewSet)
+router.register(r'budgets', BudgetViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

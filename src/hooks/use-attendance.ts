@@ -135,17 +135,42 @@ export function useClassAttendance(params: {
   class_period?: number
 }) {
   const queryParams = new URLSearchParams()
+  // The AttendanceViewSet supports filtering by date and subject (primary key s_code)
   queryParams.append('date', params.date)
+  if (params.subject) queryParams.append('subject', params.subject)
+  // Note: section/level are not filterset fields on list endpoint; kept for future compatibility
   if (params.level) queryParams.append('level', params.level.toString())
   if (params.section) queryParams.append('section', params.section.toString())
-  if (params.subject) queryParams.append('subject', params.subject)
   if (params.class_period) queryParams.append('class_period', params.class_period.toString())
   
-  const endpoint = `${endpoints.attendance}/class/?${queryParams.toString()}`
+  const attendanceBase = endpoints.attendance.endsWith('/')
+    ? endpoints.attendance.slice(0, -1)
+    : endpoints.attendance
+  const endpoint = `${attendanceBase}/?${queryParams.toString()}`
   
   return useApiQuery<ClassAttendance>(
     ['class-attendance', params],
-    () => api.get(endpoint),
+    async () => {
+      const data: any = await api.get(endpoint)
+      const records: AttendanceRecord[] = Array.isArray(data) ? data : (data?.results || [])
+      const present = records.filter(r => r.status === 'present').length
+      const absent = records.filter(r => r.status === 'absent').length
+      const late = records.filter(r => r.status === 'late').length
+      const excused = records.filter(r => r.status === 'excused').length
+      const subjectName = records[0]?.subject_name
+      return {
+        date: params.date,
+        subject: params.subject,
+        subject_name: subjectName,
+        class_period: params.class_period,
+        total_students: records.length,
+        present_count: present,
+        absent_count: absent,
+        late_count: late,
+        excused_count: excused,
+        attendance_records: records,
+      }
+    },
     {
       enabled: !!params.date,
       staleTime: 1000 * 60 * 2, // 2 minutes
@@ -179,7 +204,10 @@ export function useAttendanceRecords(params?: {
   if (params?.page_size) queryParams.append('page_size', params.page_size.toString())
   
   const queryString = queryParams.toString()
-  const endpoint = `${endpoints.attendance}/${queryString ? `?${queryString}` : ''}`
+  const attendanceBase = endpoints.attendance.endsWith('/')
+    ? endpoints.attendance.slice(0, -1)
+    : endpoints.attendance
+  const endpoint = `${attendanceBase}/${queryString ? `?${queryString}` : ''}`
   
   return useApiQuery<{
     count: number
@@ -212,9 +240,15 @@ export function useCreateAttendance() {
       }
 
       // Use student-specific endpoint if student is provided
+      const studentsBase = endpoints.students.endsWith('/')
+        ? endpoints.students
+        : `${endpoints.students}/`
+      const attendanceBase = endpoints.attendance.endsWith('/')
+        ? endpoints.attendance
+        : `${endpoints.attendance}/`
       const endpoint = data.student
-        ? `${endpoints.students}${data.student}/add_attendance/`
-        : endpoints.attendance
+        ? `${studentsBase}${data.student}/add_attendance/`
+        : attendanceBase
 
       return api.post(endpoint, formattedData)
     },
@@ -246,7 +280,10 @@ export function useUpdateAttendance() {
           : updateData.check_out_time,
         subject: updateData.subject || undefined, // Convert empty string to undefined
       }
-      return api.put(`${endpoints.attendance}/${id}/`, formattedData)
+      const attendanceBase = endpoints.attendance.endsWith('/')
+        ? endpoints.attendance.slice(0, -1)
+        : endpoints.attendance
+      return api.put(`${attendanceBase}/${id}/`, formattedData)
     },
     {
       invalidateQueries: [['attendance-records'], ['student-attendance'], ['class-attendance']],
@@ -263,7 +300,12 @@ export function useUpdateAttendance() {
 // Delete attendance record
 export function useDeleteAttendance() {
   return useApiMutation<void, number>(
-    (id) => api.delete(`${endpoints.attendance}/${id}/`),
+    (id) => {
+      const attendanceBase = endpoints.attendance.endsWith('/')
+        ? endpoints.attendance.slice(0, -1)
+        : endpoints.attendance
+      return api.delete(`${attendanceBase}/${id}/`)
+    },
     {
       invalidateQueries: [['attendance-records'], ['student-attendance'], ['class-attendance']],
       onSuccess: () => {
@@ -294,7 +336,10 @@ export function useBulkAttendance() {
             : record.check_out_time,
         }))
       }
-      return api.post(`${endpoints.attendance}bulk/`, formattedData)
+      const attendanceBase = endpoints.attendance.endsWith('/')
+        ? endpoints.attendance
+        : `${endpoints.attendance}/`
+      return api.post(`${attendanceBase}bulk/`, formattedData)
     },
     {
       invalidateQueries: [['attendance-records'], ['student-attendance'], ['class-attendance']],
@@ -324,7 +369,10 @@ export function useAttendanceStatistics(params?: {
   if (params?.subject) queryParams.append('subject', params.subject)
   
   const queryString = queryParams.toString()
-  const endpoint = `${endpoints.attendance}/statistics/${queryString ? `?${queryString}` : ''}`
+  const attendanceBase = endpoints.attendance.endsWith('/')
+    ? endpoints.attendance.slice(0, -1)
+    : endpoints.attendance
+  const endpoint = `${attendanceBase}/statistics/${queryString ? `?${queryString}` : ''}`
   
   return useApiQuery<{
     total_students: number

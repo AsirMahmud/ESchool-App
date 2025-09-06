@@ -1,43 +1,69 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { useIsAdminAuthenticated } from '@/hooks/use-admin-auth'
-import { Loader2 } from 'lucide-react'
+import { useAuth } from '@/components/providers/auth-provider'
 
 interface AdminAuthWrapperProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export default function AdminAuthWrapper({ children }: AdminAuthWrapperProps) {
-  const { isAuthenticated, user, isInitialized } = useIsAdminAuthenticated()
+  const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    // Only run authentication check after initialization
-    if (isInitialized) {
+    if (!isLoading) {
       if (!isAuthenticated) {
-        router.push('/admin/login')
+        // Store the intended destination
+        sessionStorage.setItem('redirectAfterLogin', window.location.pathname)
+        router.push('/login')
+        return
+      }
+
+      if (user && user.role !== 'admin') {
+        // Redirect non-admin users to their appropriate dashboard
+        const redirectPath = getRoleBasedPath(user.role)
+        router.push(redirectPath)
+        return
       }
     }
-  }, [isAuthenticated, isInitialized, router])
+  }, [isAuthenticated, isLoading, user, router])
 
-  // Show loading during SSR and initial client-side check
-  if (!isInitialized) {
+  // Show loading while checking authentication
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Checking authentication...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
+  // Show nothing if not authenticated or not admin (will redirect)
+  if (!isAuthenticated || !user || user.role !== 'admin') {
     return null
   }
 
   return <>{children}</>
 }
 
+// Utility function to get role-based path
+function getRoleBasedPath(role: string): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard'
+    case 'teacher':
+      return '/teacher/dashboard'
+    case 'student':
+      return '/student/dashboard'
+    case 'parent':
+      return '/parent/dashboard'
+    case 'staff':
+      return '/staff/dashboard'
+    default:
+      return '/login'
+  }
+}

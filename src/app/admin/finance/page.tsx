@@ -284,6 +284,42 @@ export default function FinancePage() {
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
+              <CardTitle>Financial Ecosystem</CardTitle>
+              <PieChart className="h-5 w-5 text-primary" />
+            </div>
+            <CardDescription>
+              Complete financial management with automated tracking
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span>Student Payments</span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  Auto Revenue
+                </Badge>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Salary Payments</span>
+                <Badge variant="outline" className="bg-red-50 text-red-700">
+                  Auto Expense
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Link href="/admin/finance/financial-ecosystem" passHref>
+              <Button variant="outline" className="w-full">
+                Manage Ecosystem
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </CardFooter>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
               <CardTitle>Financial Reports</CardTitle>
               <LineChart className="h-5 w-5 text-primary" />
             </div>

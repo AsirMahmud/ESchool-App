@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'events',
     'parent',
     'admission_office',
+    'finance',
 ]
 
 MIDDLEWARE = [

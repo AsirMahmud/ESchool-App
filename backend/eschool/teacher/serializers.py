@@ -9,12 +9,13 @@ class TeacherSerializer(serializers.ModelSerializer):
     teacher_email = serializers.CharField(source='teacher_id.email', read_only=True)
     teacher_phone = serializers.CharField(source='teacher_id.phone', read_only=True)
     department_name = serializers.CharField(source='teacher_id.department.d_name', read_only=True)
+    user_id = serializers.IntegerField(source='teacher_id.user.id', read_only=True)
     
     class Meta:
         model = Teacher
         fields = [
             'teacher_id', 'teacher_name', 'teacher_email', 'teacher_phone',
-            'department_name', 'qualification', 'specialization',
+            'department_name', 'user_id', 'qualification', 'specialization',
             'years_of_experience', 'is_class_teacher', 'max_classes',
             'bio', 'email', 'phone', 'address', 'emergency_contact', 'emergency_phone',
             'education', 'certifications', 'skills', 'experience_details',
@@ -102,8 +103,28 @@ class TeacherDetailSerializer(TeacherSerializer):
         ]
     
     def get_current_subjects(self, obj):
-        """Get current subjects taught by teacher"""
-        return TeacherSubjectSerializer(obj.current_subjects, many=True).data
+        """Get current subjects taught by teacher from section assignments"""
+        from level.models import SectionSubject
+        
+        # Get section subjects for this teacher
+        section_subjects = SectionSubject.objects.filter(teacher=obj, is_active=True)
+        
+        # Convert to the expected format
+        subjects_data = []
+        for ss in section_subjects:
+            subjects_data.append({
+                'id': ss.id,
+                'subject': ss.subject.s_code,
+                'subject_name': ss.subject.s_name,
+                'subject_code': ss.subject.s_code,
+                'is_active': ss.is_active,
+                'start_date': ss.created_at.date(),
+                'end_date': None,
+                'section_name': ss.section.section_name,
+                'section_id': ss.section.id
+            })
+        
+        return subjects_data
     
     def get_current_classes(self, obj):
         """Get current classes taught by teacher"""
@@ -116,18 +137,20 @@ class TeacherListSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(source='teacher_id.name', read_only=True)
     teacher_email = serializers.CharField(source='teacher_id.email', read_only=True)
     department_name = serializers.CharField(source='teacher_id.department.d_name', read_only=True)
+    user_id = serializers.IntegerField(source='teacher_id.user.id', read_only=True)
     subject_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Teacher
         fields = [
             'teacher_id', 'teacher_name', 'teacher_email', 'department_name',
-            'qualification', 'specialization', 'years_of_experience',
+            'user_id', 'qualification', 'specialization', 'years_of_experience',
             'is_class_teacher', 'subject_count'
         ]
     
     def get_subject_count(self, obj):
-        """Get number of subjects taught by teacher"""
-        return obj.current_subjects.count()
+        """Get number of subjects taught by teacher from section assignments"""
+        from level.models import SectionSubject
+        return SectionSubject.objects.filter(teacher=obj, is_active=True).count()
 
 

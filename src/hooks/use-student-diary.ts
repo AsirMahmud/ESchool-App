@@ -4,7 +4,7 @@ import { api, endpoints } from '@/lib/api'
 // Types
 export interface StudentDiaryEntry {
   id: number
-  student: number
+  student: string
   student_name: string
   subject: string
   subject_name: string
@@ -19,7 +19,7 @@ export interface StudentDiaryEntry {
 }
 
 export interface CreateDiaryEntryData {
-  student: number
+  student: string
   subject: string
   task: string
   due_date: string
@@ -35,13 +35,13 @@ export interface UpdateDiaryEntryData extends Partial<CreateDiaryEntryData> {
 
 // Hooks
 export function useStudentDiaryEntries(filters?: {
-  student?: number
+  student?: string
   subject?: string
   is_completed?: boolean
   overdue?: boolean
 }) {
   const queryParams = new URLSearchParams()
-  if (filters?.student) queryParams.append('student', filters.student.toString())
+  if (filters?.student) queryParams.append('student', filters.student)
   if (filters?.subject) queryParams.append('subject', filters.subject)
   if (filters?.is_completed !== undefined) queryParams.append('is_completed', filters.is_completed.toString())
 
@@ -94,9 +94,9 @@ export function useCreateDiaryEntry() {
 
 export function useUpdateDiaryEntry() {
   return useApiMutation<StudentDiaryEntry, UpdateDiaryEntryData>(
-    (data) => api.put(`${endpoints.studentDiary}${data.id}/`, data),
+    (data) => api.patch(`${endpoints.studentDiary}${data.id}/`, data),
     {
-      invalidateQueries: [['student-diary'], ['student-diary', data.id.toString()]],
+      invalidateQueries: [['student-diary']],
       onSuccess: () => {
         console.log('Diary entry updated successfully')
       },

@@ -335,14 +335,33 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 if existing:
                     # Update existing record
                     for key, value in attendance_data.items():
-                        if value is not None:
-                            setattr(existing, key, value)
+                        if value is None:
+                            continue
+                        # Do not reassign student relation using instance; use _id or skip
+                        if key == 'student':
+                            # existing student should not change; ensure correct type if provided
+                            try:
+                                existing.student_id = value
+                            except Exception:
+                                # fallback: skip updating student if assignment fails
+                                pass
+                            continue
+                        # Handle subject foreign key via subject_id (subject code is PK)
+                        if key == 'subject':
+                            existing.subject_id = value
+                            continue
+                        setattr(existing, key, value)
                     existing.save()
                     serializer = AttendanceSerializer(existing)
                     created_records.append(serializer.data)
                 else:
-                    # Create new record
-                    serializer = AttendanceSerializer(data=attendance_data)
+                    # Create new record. Ensure we pass *_id for FKs
+                    create_payload = attendance_data.copy()
+                    create_payload['student'] = attendance_data['student']
+                    # Subject is optional; pass through when provided
+                    if 'subject' in create_payload:
+                        create_payload['subject'] = attendance_data['subject']
+                    serializer = AttendanceSerializer(data=create_payload)
                     if serializer.is_valid():
                         serializer.save()
                         created_records.append(serializer.data)

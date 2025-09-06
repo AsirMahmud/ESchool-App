@@ -1,8 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 
 // Generic API hook for GET requests
 export function useApiQuery<T>(
-  key: string[],
+  key: QueryKey,
   fetcher: () => Promise<T>,
   options?: {
     enabled?: boolean
@@ -29,7 +29,7 @@ export function useApiMutation<T, V>(
   options?: {
     onSuccess?: (data: T, variables: V) => void
     onError?: (error: Error, variables: V) => void
-    invalidateQueries?: string[][]
+    invalidateQueries?: QueryKey[]
   }
 ) {
   const queryClient = useQueryClient()

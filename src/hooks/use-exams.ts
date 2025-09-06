@@ -1,5 +1,6 @@
 import { useApiQuery, useApiMutation } from './use-api'
 import { api, endpoints } from '@/lib/api'
+import { useCurrentStudent } from './use-students'
 
 export interface Exam {
   exam_id: number
@@ -92,7 +93,7 @@ export interface UpdateExamResultData extends Partial<CreateExamResultData> {
 // Hooks
 export function useExams(filters?: {
   exam_type?: string
-  subject?: number
+  subject?: string // Subject code (s_code)
   level?: number
   section?: number
   status?: string
@@ -104,7 +105,7 @@ export function useExams(filters?: {
     async () => {
       const params = new URLSearchParams()
       if (filters?.exam_type) params.append('exam_type', filters.exam_type)
-      if (filters?.subject) params.append('subject', filters.subject.toString())
+      if (filters?.subject) params.append('subject', filters.subject)
       if (filters?.level) params.append('level', filters.level.toString())
       if (filters?.section) params.append('section', filters.section.toString())
       if (filters?.status) params.append('status', filters.status)
@@ -181,5 +182,52 @@ export function useDeleteExamResult() {
   return useApiMutation<void, number>(
     (id) => api.delete(`${endpoints.examResults}/${id}/`),
     { invalidateQueries: [['exam'], ['exams']] }
+  )
+}
+
+// Fetch exam results for the current logged-in student
+export function useExamResultsByStudent(studentId?: string) {
+  const { data: student, isLoading } = useCurrentStudent()
+  const targetStudentId = studentId || student?.s_id
+
+  return useApiQuery<ExamResult[]>(
+    ['exam-results-by-student', targetStudentId || ''],
+    async () => {
+      if (!targetStudentId) return []
+      // Filter global exam-results by student UUID
+      const params = new URLSearchParams({ student: String(targetStudentId) })
+      const endpoint = `${endpoints.examResults}?${params.toString()}`
+      const data: any = await api.get(endpoint)
+      if (Array.isArray(data)) return data as ExamResult[]
+      if (data && Array.isArray(data.results)) return data.results as ExamResult[]
+      return []
+    },
+    {
+      enabled: !!targetStudentId && (!studentId || !isLoading),
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+}
+
+// Fetch exams for a specific student
+export function useExamsByStudent(studentId?: string) {
+  const { data: student, isLoading } = useCurrentStudent()
+  const targetStudentId = studentId || student?.s_id
+
+  return useApiQuery<Exam[]>(
+    ['exams-by-student', targetStudentId || ''],
+    async () => {
+      if (!targetStudentId) return []
+      const params = new URLSearchParams({ student: String(targetStudentId) })
+      const endpoint = `${endpoints.exams}?${params.toString()}`
+      const data: any = await api.get(endpoint)
+      if (Array.isArray(data)) return data as Exam[]
+      if (data && Array.isArray(data.results)) return data.results as Exam[]
+      return []
+    },
+    {
+      enabled: !!targetStudentId && (!studentId || !isLoading),
+      staleTime: 1000 * 60 * 5,
+    }
   )
 }

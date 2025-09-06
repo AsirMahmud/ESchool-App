@@ -31,11 +31,30 @@ class TeacherViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'])
     def subjects(self, request, pk=None):
-        """Get subjects taught by a specific teacher"""
+        """Get subjects taught by a specific teacher from section assignments"""
+        from level.models import SectionSubject
+        
         teacher = self.get_object()
-        subjects = teacher.subjects_taught.filter(is_active=True)
-        serializer = TeacherSubjectSerializer(subjects, many=True)
-        return Response(serializer.data)
+        
+        # Get section subjects for this teacher
+        section_subjects = SectionSubject.objects.filter(teacher=teacher, is_active=True)
+        
+        # Convert to the expected format
+        subjects_data = []
+        for ss in section_subjects:
+            subjects_data.append({
+                'id': ss.id,
+                'subject': ss.subject.s_code,
+                'subject_name': ss.subject.s_name,
+                'subject_code': ss.subject.s_code,
+                'is_active': ss.is_active,
+                'start_date': ss.created_at.date(),
+                'end_date': None,
+                'section_name': ss.section.section_name,
+                'section_id': ss.section.id
+            })
+        
+        return Response(subjects_data)
     
     @action(detail=True, methods=['get'])
     def classes(self, request, pk=None):

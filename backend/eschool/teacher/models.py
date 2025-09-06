@@ -123,6 +123,30 @@ class Teacher(models.Model):
     def current_classes(self):
         """Get classes currently taught by this teacher"""
         return self.classes_taught.filter(is_active=True)
+    
+    @property
+    def section_subjects(self):
+        """Get subjects taught by this teacher through section assignments"""
+        from level.models import SectionSubject
+        return SectionSubject.objects.filter(teacher=self, is_active=True)
+    
+    @property
+    def all_teaching_subjects(self):
+        """Get all subjects this teacher is teaching (both direct and through sections)"""
+        from subject.models import Subject
+        from level.models import SectionSubject
+        
+        # Get subject IDs from direct assignments
+        direct_subject_ids = self.subjects_taught.filter(is_active=True).values_list('subject_id', flat=True)
+        
+        # Get subject IDs from section assignments
+        section_subject_ids = SectionSubject.objects.filter(
+            teacher=self, is_active=True
+        ).values_list('subject_id', flat=True)
+        
+        # Combine and get unique subjects
+        all_subject_ids = set(list(direct_subject_ids) + list(section_subject_ids))
+        return Subject.objects.filter(s_code__in=all_subject_ids)
 
 
 class TeacherSubject(models.Model):
