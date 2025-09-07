@@ -72,3 +72,4 @@ def delete_salary_transaction(sender, instance, **kwargs):
         reference_type='salary',
         reference_id=str(instance.sal_id)
     ).delete()
+

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*gl#7_kz%y2t%zi9_!n*@4@yq!rx53(m0&u@ky@8)69ij8g(*^'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-*gl#7_kz%y2t%zi9_!n*@4@yq!rx53(m0&u@ky@8)69ij8g(*^')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()] or []
 
 
 # Application definition
@@ -96,8 +97,15 @@ WSGI_APPLICATION = 'eschool.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'rawstitc_eschool',
+        'USER': 'rawstitc_asir',
+        'PASSWORD': '@Asd098qwe',
+        'HOST': '160.25.226.148',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 

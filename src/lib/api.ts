@@ -105,11 +105,25 @@ async function apiRequest<T>(
   }
 }
 
+// Helper to append query params to an endpoint
+function withQuery(endpoint: string, params?: Record<string, any>): string {
+  if (!params || Object.keys(params).length === 0) return endpoint
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+    search.append(key, String(value))
+  })
+  const sep = endpoint.includes('?') ? '&' : '?'
+  return `${endpoint}${sep}${search.toString()}`
+}
+
 // HTTP methods
 export const api = {
-  // GET request
-  get: <T>(endpoint: string): Promise<T> => 
-    apiRequest<T>(endpoint, { method: 'GET' }),
+  // GET request (supports optional params)
+  get: <T>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> => {
+    const finalEndpoint = withQuery(endpoint, options?.params)
+    return apiRequest<T>(finalEndpoint, { method: 'GET' })
+  },
 
   // POST request
   post: <T>(endpoint: string, data?: any): Promise<T> => 

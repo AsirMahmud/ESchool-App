@@ -160,3 +160,4 @@ class FinancialOverviewSerializer(serializers.Serializer):
             'student_fees_revenue', 'other_revenue', 'salary_expenses',
             'operational_expenses', 'total_transactions'
         ]
+

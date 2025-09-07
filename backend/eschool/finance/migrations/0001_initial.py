@@ -119,3 +119,4 @@ class Migration(migrations.Migration):
             unique_together={('name', 'year', 'quarter', 'month')},
         ),
     ]
+

@@ -321,3 +321,4 @@ class Budget(models.Model):
     def is_over_budget(self):
         """Check if actual amount exceeds budget"""
         return self.actual_amount > self.budgeted_amount
+

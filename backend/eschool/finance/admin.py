@@ -78,3 +78,4 @@ class BudgetAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+

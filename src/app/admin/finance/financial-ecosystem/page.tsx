@@ -116,6 +116,7 @@ export default function FinancialEcosystemPage() {
     paymentType: "tuition",
     method: "cash",
     description: "",
+    month: "",
     academic_year: new Date().getFullYear().toString(),
   });
 
@@ -143,6 +144,33 @@ export default function FinancialEcosystemPage() {
     date: new Date().toISOString().split('T')[0],
   });
 
+  const toFirstDayOfMonth = (label: string): string => {
+    // label formats supported: "January 2025", "01-2025", "2025-01"
+    if (!label) return new Date().toISOString().split('T')[0]
+    const months: Record<string, string> = {
+      january: '01', february: '02', march: '03', april: '04', may: '05', june: '06',
+      july: '07', august: '08', september: '09', october: '10', november: '11', december: '12'
+    }
+    const t = label.trim()
+    let y = '', m = ''
+    const nameMatch = t.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$/i)
+    const mmDashYYYY = t.match(/^(\d{1,2})-(\d{4})$/)
+    const yyyymm = t.match(/^(\d{4})-(\d{1,2})$/)
+    if (nameMatch) {
+      m = months[nameMatch[1].toLowerCase()] || '01'
+      y = nameMatch[2]
+    } else if (mmDashYYYY) {
+      m = String(mmDashYYYY[1]).padStart(2, '0')
+      y = mmDashYYYY[2]
+    } else if (yyyymm) {
+      y = yyyymm[1]
+      m = String(yyyymm[2]).padStart(2, '0')
+    } else {
+      return new Date().toISOString().split('T')[0]
+    }
+    return `${y}-${m}-01`
+  }
+
   const handleStudentPayment = async () => {
     try {
       // Validation
@@ -157,42 +185,73 @@ export default function FinancialEcosystemPage() {
       }
 
       const today = new Date().toISOString().split('T')[0];
+      const selectedMonthDate = paymentForm.month ? toFirstDayOfMonth(paymentForm.month) : today;
       
       // Create a simple parent record if none exists
       let parentId = paymentForm.parent ? parseInt(paymentForm.parent) : null;
       
       if (!parentId) {
-        // Create a basic parent record using student info
+        // Try to find or create a parent record using student info
         const studentsArray = Array.isArray(students) ? students : (students as any)?.results || [];
         const selectedStudent = studentsArray?.find((s: any) => 
           (s.student_id?.toString() === paymentForm.student) || (s.s_id?.toString() === paymentForm.student)
         );
+        
         if (selectedStudent) {
           try {
-            const parentResponse: any = await api.post('/parents/', {
-              name: `Parent of ${selectedStudent.name}`,
-              email: selectedStudent.email || `parent.${selectedStudent.student_id}@school.com`,
-              phone: selectedStudent.phone || '0000000000',
-              gender: 'other',
-              occupation: 'other',
-              address: selectedStudent.address || 'Not provided',
-            });
-            parentId = parentResponse.data.p_id;
+            // First, try to find existing parent by email
+            const studentEmail = selectedStudent.email || `parent.${selectedStudent.student_id || selectedStudent.s_id}@school.com`;
+            
+            try {
+              const existingParentsResponse: any = await api.get(`/parents/?email=${encodeURIComponent(studentEmail)}`);
+              const existingParents = Array.isArray(existingParentsResponse) ? existingParentsResponse : existingParentsResponse?.results || [];
+              if (existingParents.length > 0) {
+                // Use existing parent
+                parentId = existingParents[0].p_id;
+                console.log("Using existing parent:", parentId);
+              } else {
+                // Create new parent if none exists
+                const parentResponse: any = await api.post('/parents/', {
+                  name: `Parent of ${selectedStudent.name}`,
+                  email: studentEmail,
+                  phone: selectedStudent.phone || '0000000000',
+                  gender: 'other',
+                  occupation: 'other',
+                  address: selectedStudent.address || 'Not provided',
+                });
+                parentId = parentResponse.p_id || parentResponse.data?.p_id;
+                console.log("Created new parent:", parentId);
+              }
+            } catch (searchError) {
+              console.error("Error searching for existing parent:", searchError);
+              // If search fails, try creating a unique parent
+              const uniqueEmail = `parent.${selectedStudent.student_id || selectedStudent.s_id}.${Date.now()}@school.com`;
+              const parentResponse: any = await api.post('/parents/', {
+                name: `Parent of ${selectedStudent.name}`,
+                email: uniqueEmail,
+                phone: selectedStudent.phone || '0000000000',
+                gender: 'other',
+                occupation: 'other',
+                address: selectedStudent.address || 'Not provided',
+              });
+              parentId = parentResponse.p_id || parentResponse.data?.p_id;
+              console.log("Created parent with unique email:", parentId);
+            }
           } catch (parentError) {
-            console.error("Failed to create parent:", parentError);
-            toast.error("Failed to create parent record");
+            console.error("Failed to handle parent record:", parentError);
+            toast.error("Failed to process parent information");
             return;
           }
         }
       }
       
       const paymentData = {
-        parent: parentId,
+        parent: parentId || 0,
         student: parseInt(paymentForm.student),
         payment_type: paymentForm.paymentType,
         amount: paymentForm.amount,
-        due_date: today,
-        payment_date: today,
+        due_date: selectedMonthDate,
+        payment_date: selectedMonthDate,
         status: 'paid', // Mark as paid immediately to trigger revenue recording
         payment_method: paymentForm.method,
         academic_year: paymentForm.academic_year,
@@ -213,6 +272,7 @@ export default function FinancialEcosystemPage() {
         paymentType: "tuition",
         method: "cash",
         description: "",
+        month: "",
         academic_year: new Date().getFullYear().toString(),
       });
     } catch (error) {
@@ -234,12 +294,22 @@ export default function FinancialEcosystemPage() {
         return;
       }
 
+      // Ensure employee is a valid numeric ID
+      if (!/^\d+$/.test(String(salaryForm.employee))) {
+        toast.error("Invalid employee selected");
+        return;
+      }
+
+      // Derive pay_date from selected month
+      const payDate = salaryForm.month ? toFirstDayOfMonth(salaryForm.month) : new Date().toISOString().split('T')[0];
+
       const salaryData = {
-        employee: parseInt(salaryForm.employee),
+        employee: parseInt(String(salaryForm.employee)),
         salary_type: salaryForm.type,
         amount: salaryForm.amount,
         month: salaryForm.month,
         basic_salary: salaryForm.amount, // Simplified for now
+        pay_date: payDate,
         notes: salaryForm.description,
       };
       
@@ -466,15 +536,32 @@ export default function FinancialEcosystemPage() {
                 <Label htmlFor="student" className="text-right">
                   Student
                 </Label>
-                <Select onValueChange={(value) => {
+                <Select onValueChange={async (value) => {
                   const studentsArray = Array.isArray(students) ? students : (students as any)?.results || [];
                   const selectedStudent = studentsArray?.find((s: any) => 
                     (s.student_id?.toString() === value) || (s.s_id?.toString() === value)
                   );
+                  
+                  let parentId = "";
+                  
+                  // Try to find existing parent for this student
+                  if (selectedStudent) {
+                    try {
+                      const studentParentsResponse: any = await api.get(`/student-parents/?student=${value}`);
+                      const studentParents = Array.isArray(studentParentsResponse) ? studentParentsResponse : studentParentsResponse?.results || [];
+                      
+                      if (studentParents.length > 0) {
+                        parentId = studentParents[0].parent?.toString() || "";
+                      }
+                    } catch (error) {
+                      console.log("No existing parent found for student:", value);
+                    }
+                  }
+                  
                   setPaymentForm({
                     ...paymentForm, 
                     student: value,
-                    parent: selectedStudent?.current_parents?.[0]?.parent?.toString() || ""
+                    parent: parentId
                   });
                 }}>
                   <SelectTrigger className="col-span-3">
@@ -556,6 +643,18 @@ export default function FinancialEcosystemPage() {
                   placeholder="Optional description"
                   className="col-span-3"
                 />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="paymentMonth" className="text-right">
+                  Month
+                </Label>
+                <div className="col-span-3">
+                  <MonthYearPicker
+                    value={paymentForm.month}
+                    onChange={(value) => setPaymentForm({...paymentForm, month: value})}
+                    placeholder="Select month and year"
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>

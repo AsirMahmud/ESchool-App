@@ -108,6 +108,7 @@ export interface SalaryPaymentRequest {
   amount: string
   month: string
   basic_salary: string
+  pay_date: string
   allowances?: string
   deductions?: string
   overtime_hours?: string
@@ -139,19 +140,23 @@ export function useFinancialTransaction(id: number) {
 }
 
 export function useCreateFinancialTransaction() {
-  return useApiMutation({
-    mutationFn: (data: Partial<FinancialTransaction>) =>
+  return useApiMutation(
+    (data: Partial<FinancialTransaction>) =>
       api.post('/financial-transactions/', data),
-    invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']],
-  })
+    {
+      invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']],
+    }
+  )
 }
 
 export function useUpdateFinancialTransaction() {
-  return useApiMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Partial<FinancialTransaction>) =>
+  return useApiMutation(
+    ({ id, ...data }: { id: number } & Partial<FinancialTransaction>) =>
       api.patch(`/financial-transactions/${id}/`, data),
-    invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']],
-  })
+    {
+      invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']],
+    }
+  )
 }
 
 export function useDeleteFinancialTransaction() {
@@ -196,8 +201,8 @@ export function useCategoryBreakdown(params?: {
 
 // Student Payment Recording
 export function useRecordStudentPayment() {
-  return useApiMutation({
-    mutationFn: async (data: StudentPaymentRequest) => {
+  return useApiMutation(
+    async (data: StudentPaymentRequest) => {
       console.log('Recording student payment with data:', data);
       try {
         const response = await api.post('/financial-transactions/record_student_payment/', data);
@@ -208,19 +213,21 @@ export function useRecordStudentPayment() {
         throw error;
       }
     },
-    invalidateQueries: [
-      ['financial-transactions'], 
-      ['financial-overview'], 
-      ['payments'],
-      ['monthly-trend']
-    ],
-  })
+    {
+      invalidateQueries: [
+        ['financial-transactions'], 
+        ['financial-overview'], 
+        ['payments'],
+        ['monthly-trend']
+      ],
+    }
+  )
 }
 
 // Salary Payment Recording
 export function useRecordSalaryPayment() {
-  return useApiMutation({
-    mutationFn: async (data: SalaryPaymentRequest) => {
+  return useApiMutation(
+    async (data: SalaryPaymentRequest) => {
       console.log('Recording salary payment with data:', data);
       try {
         const response = await api.post('/financial-transactions/record_salary_payment/', data);
@@ -231,13 +238,15 @@ export function useRecordSalaryPayment() {
         throw error;
       }
     },
-    invalidateQueries: [
-      ['financial-transactions'], 
-      ['financial-overview'], 
-      ['employee-salaries'],
-      ['monthly-trend']
-    ],
-  })
+    {
+      invalidateQueries: [
+        ['financial-transactions'], 
+        ['financial-overview'], 
+        ['employee-salaries'],
+        ['monthly-trend']
+      ],
+    }
+  )
 }
 
 // Hooks for Financial Summaries

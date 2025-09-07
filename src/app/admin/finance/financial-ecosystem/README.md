@@ -124,3 +124,4 @@ const revenue = await createTransaction({
 - **Scalable**: Handles growing transaction volumes efficiently
 
 This financial ecosystem provides a complete solution for school financial management, automating the tedious parts while providing powerful insights and reporting capabilities.
+

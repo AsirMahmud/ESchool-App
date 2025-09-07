@@ -281,3 +281,4 @@ export function useMonthlyPayments(studentId: string, year: number, month: numbe
     enabled: !!(studentId && year && month),
   });
 }
+
