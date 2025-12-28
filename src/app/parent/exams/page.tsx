@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +9,7 @@ import { useExamsByStudent } from '@/hooks/use-exams'
 import { ClipboardCheck, Calendar, Clock, MapPin } from 'lucide-react'
 import { format } from 'date-fns'
 
-export default function ParentExamsPage() {
+function ParentExamsContent() {
   const searchParams = useSearchParams()
   const selectedChildId = searchParams.get('child')
 
@@ -122,6 +123,21 @@ export default function ParentExamsPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function ParentExamsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Exam Schedule</h1>
+          <p className="text-gray-600">Loading exam schedule...</p>
+        </div>
+      </div>
+    }>
+      <ParentExamsContent />
+    </Suspense>
   )
 }
 

@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { PublicRoute } from '@/components/providers/auth-provider'
-import { usePasswordReset } from '@/hooks/use-auth'
+import { useRequestPasswordReset } from '@/hooks/use-auth'
 
 const resetSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState<string | null>(null)
   
   const router = useRouter()
-  const resetMutation = usePasswordReset()
+  const resetMutation = useRequestPasswordReset()
 
   const form = useForm<ResetFormData>({
     resolver: zodResolver(resetSchema),

@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 export default function ClassAssignmentPage() {
   // In a real application, you would fetch the teacher data and class data from the database
@@ -147,8 +147,7 @@ export default function ClassAssignmentPage() {
 
   const handleSaveAssignments = () => {
     // In a real application, you would save the assignments to the database
-    toast({
-      title: "Assignments saved",
+    toast.success("Assignments saved", {
       description: "Class assignments have been updated successfully.",
     });
   };

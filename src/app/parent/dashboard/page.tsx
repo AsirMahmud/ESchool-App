@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useCurrentParent, useParentChildren } from '@/hooks/use-parents'
@@ -7,7 +8,7 @@ import { useStudentSubjects } from '@/hooks/use-students'
 import { useExamResultsByStudent } from '@/hooks/use-exams'
 import { useSearchParams } from 'next/navigation'
 
-export default function ParentDashboardPage() {
+function ParentDashboardContent() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const selectedChildId = searchParams.get('child')
@@ -82,6 +83,21 @@ export default function ParentDashboardPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function ParentDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ParentDashboardContent />
+    </Suspense>
   )
 }
 

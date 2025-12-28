@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +8,7 @@ import { useCurrentParent, useParentChildren } from '@/hooks/use-parents'
 import { useStudentSubjects } from '@/hooks/use-students'
 import { BookOpen, User } from 'lucide-react'
 
-export default function ParentSubjectsPage() {
+function ParentSubjectsContent() {
   const searchParams = useSearchParams()
   const selectedChildId = searchParams.get('child')
 
@@ -91,6 +92,21 @@ export default function ParentSubjectsPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function ParentSubjectsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
+          <p className="text-gray-600">Loading subjects...</p>
+        </div>
+      </div>
+    }>
+      <ParentSubjectsContent />
+    </Suspense>
   )
 }
 

@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Download, FileText, Plus, Search, Upload } from "lucide-react"
@@ -8,11 +10,15 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal } from "lucide-react"
+import { useParams } from "next/navigation"
 
-export default function EmployeeDocumentsPage({ params }: { params: { id: string } }) {
+export default function EmployeeDocumentsPage() {
+  const params = useParams()
+  const id = params?.id as string
+  
   // In a real application, you would fetch the employee data based on the ID
   const employee = {
-    id: params.id,
+    id: id,
     name: "John Smith",
     email: "john.smith@eschool.edu",
     role: "Administrator",
@@ -80,7 +86,7 @@ export default function EmployeeDocumentsPage({ params }: { params: { id: string
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" asChild>
-            <Link href={`/admin/employees/${params.id}/profile`}>
+            <Link href={`/admin/employees/${id}/profile`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -193,9 +199,6 @@ export default function EmployeeDocumentsPage({ params }: { params: { id: string
         <Card className="border-dashed flex flex-col items-center justify-center p-6">
           <div className="rounded-full bg-primary/10 p-3 mb-3">
             <Plus className="h-6 w-6 text-primary" />
-          </div>
-          <h3 className="font-medium">Upload New Document</h3>
-          <p className="  />
           </div>
           <h3 className="font-medium">Upload New Document</h3>
           <p className="text-sm text-muted-foreground text-center mt-1 mb-4">

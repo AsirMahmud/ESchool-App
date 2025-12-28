@@ -1,4 +1,5 @@
-'use client'
+"use client";
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -6,11 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Calendar, Download } from 'lucide-react'
 import Link from "next/link"
+import { useParams } from "next/navigation"
 
-export default function TeacherPerformancePage({ params }: { params: { id: string } }) {
+export default function TeacherPerformancePage() {
+  const params = useParams()
+  const id = params?.id as string
+  
   // In a real application, you would fetch the teacher data based on the ID
   const teacher = {
-    id: params.id,
+    id: id,
     name: "Sarah Johnson",
     department: "Mathematics",
   }
@@ -58,7 +63,7 @@ export default function TeacherPerformancePage({ params }: { params: { id: strin
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href={`/admin/teachers/${params.id}/profile`}>
+          <Link href={`/admin/teachers/${id}/profile`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -287,7 +292,8 @@ export default function TeacherPerformancePage({ params }: { params: { id: strin
                     Published {performanceData.researchPublications} papers in mathematics education journals
                   </p>
                 </div>
-                &lt;div className="rounded-lg border p-4"&gt;                  <h3 className="font-medium">Curriculum Development</h3>
+                <div className="rounded-lg border p-4">
+                  <h3 className="font-medium">Curriculum Development</h3>
                   <p className="text-sm text-muted-foreground">
                     Led the development of the new Advanced Calculus curriculum
                   </p>
@@ -298,7 +304,30 @@ export default function TeacherPerformancePage({ params }: { params: { id: strin
                     Coached students to 2nd place in the Regional Mathematics Olympiad
                   </p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="development" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Development</CardTitle>
+              <CardDescription>Workshops, courses, and training completed</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div className="rounded-lg border p-4">
-
-
-
+                  <h3 className="font-medium">Completed This Year</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {performanceData.professionalDevelopment} professional development activities completed
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

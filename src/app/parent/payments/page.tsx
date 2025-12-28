@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +8,7 @@ import { useCurrentParent, useParentChildren, useParentPayments } from '@/hooks/
 import { CreditCard, Calendar, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 
-export default function ParentPaymentsPage() {
+function ParentPaymentsContent() {
   const searchParams = useSearchParams()
   const selectedChildId = searchParams.get('child')
 
@@ -182,6 +183,21 @@ export default function ParentPaymentsPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function ParentPaymentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
+          <p className="text-gray-600">Loading payment information...</p>
+        </div>
+      </div>
+    }>
+      <ParentPaymentsContent />
+    </Suspense>
   )
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,7 +9,7 @@ import { useCurrentParent, useParentChildren } from '@/hooks/use-parents'
 import { useStudentTeachers } from '@/hooks/use-students'
 import { Users, Mail, Phone, BookOpen } from 'lucide-react'
 
-export default function ParentTeachersPage() {
+function ParentTeachersContent() {
   const searchParams = useSearchParams()
   const selectedChildId = searchParams.get('child')
 
@@ -121,5 +122,20 @@ export default function ParentTeachersPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function ParentTeachersPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Teachers</h1>
+          <p className="text-gray-600">Loading teachers...</p>
+        </div>
+      </div>
+    }>
+      <ParentTeachersContent />
+    </Suspense>
   )
 }

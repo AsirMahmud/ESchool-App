@@ -44,9 +44,6 @@ export default function TimetablePage() {
   const [selectedDay, setSelectedDay] = useState("all");
   const [viewMode, setViewMode] = useState("weekly");
 
-  // Sample timetable data  = useState("all")
-  const [viewMode, setViewMode] = useState("weekly");
-
   // Sample timetable data
   const timetableData = {
     "grade-6a": {

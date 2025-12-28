@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -44,7 +44,7 @@ const navigation = [
   { name: 'Payments', href: '/parent/payments', icon: CreditCard },
 ]
 
-export default function ParentLayout({ children }: { children: React.ReactNode }) {
+function ParentLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -92,8 +92,7 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <RoleBasedRoute role="parent">
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
         {/* Mobile menu */}
         <div className="lg:hidden bg-white shadow-sm border-b px-4 py-3 flex justify-between items-center">
           <h1 className="text-xl font-semibold text-gray-900">Parent Portal</h1>
@@ -253,7 +252,23 @@ export default function ParentLayout({ children }: { children: React.ReactNode }
             </main>
           </div>
         </div>
-      </div>
+    </div>
+  )
+}
+
+export default function ParentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RoleBasedRoute role="parent">
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg font-medium text-gray-900">Loading...</div>
+            <div className="text-sm text-gray-600 mt-2">Please wait</div>
+          </div>
+        </div>
+      }>
+        <ParentLayoutContent>{children}</ParentLayoutContent>
+      </Suspense>
     </RoleBasedRoute>
   )
 }
