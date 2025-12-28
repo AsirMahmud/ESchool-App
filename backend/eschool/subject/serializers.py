@@ -84,6 +84,7 @@ class SubjectDetailSerializer(SubjectSerializer):
 class SubjectListSerializer(serializers.ModelSerializer):
     """Simplified serializer for Subject list view"""
     
+    department = serializers.CharField(source='department.d_name', read_only=True)
     department_name = serializers.CharField(source='department.d_name', read_only=True)
     teacher_count = serializers.ReadOnlyField()
     
@@ -91,7 +92,7 @@ class SubjectListSerializer(serializers.ModelSerializer):
         model = Subject
         fields = [
             's_code', 's_name', 'subject_type', 'difficulty_level',
-            'department_name', 'teacher_count', 'is_active'
+            'department', 'department_name', 'teacher_count', 'is_active'
         ]
 
 

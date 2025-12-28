@@ -101,7 +101,7 @@ DATABASES = {
         'NAME': 'rawstitc_eschool',
         'USER': 'rawstitc_asir',
         'PASSWORD': '@Asd098qwe',
-        'HOST': '160.25.226.148',
+        'HOST': '103.14.23.90',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',

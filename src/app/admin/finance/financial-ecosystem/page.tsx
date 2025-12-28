@@ -294,17 +294,11 @@ export default function FinancialEcosystemPage() {
         return;
       }
 
-      // Ensure employee is a valid numeric ID
-      if (!/^\d+$/.test(String(salaryForm.employee))) {
-        toast.error("Invalid employee selected");
-        return;
-      }
-
       // Derive pay_date from selected month
       const payDate = salaryForm.month ? toFirstDayOfMonth(salaryForm.month) : new Date().toISOString().split('T')[0];
 
       const salaryData = {
-        employee: parseInt(String(salaryForm.employee)),
+        employee: String(salaryForm.employee),
         salary_type: salaryForm.type,
         amount: salaryForm.amount,
         month: salaryForm.month,
@@ -506,7 +500,7 @@ export default function FinancialEcosystemPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {overviewLoading ? "Loading..." : `${(financialOverview as any)?.profit_margin?.toFixed(1) || 0}%`}
+              {overviewLoading ? "Loading..." : `${Number((financialOverview as any)?.profit_margin ?? 0).toFixed(1)}%`}
             </div>
             <div className="text-sm text-muted-foreground">
               Healthy margin

@@ -26,7 +26,7 @@ export default function AccountManagementPage() {
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher' | 'staff'>('student')
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
-  const [resetPassword, setResetPassword] = useState<string | null>(null)
+  const [resetPassword, setResetPassword] = useState<{ password: string; userId: number; userEmail: string } | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'students' | 'teachers' | 'employees'>('all')
   const [selectedProfiles, setSelectedProfiles] = useState<Set<string>>(new Set())
@@ -62,9 +62,15 @@ export default function AccountManagementPage() {
   const handleResetPassword = async (userId: number) => {
     try {
       const result = await resetPasswordMutation.mutateAsync({ user_id: userId })
-      setResetPassword(result.new_password)
+      const user = userAccounts?.find(u => u.id === userId)
+      setResetPassword({
+        password: result.new_password,
+        userId: userId,
+        userEmail: user?.email || 'N/A'
+      })
     } catch (error) {
       console.error('Failed to reset password:', error)
+      alert('Failed to reset password. Please try again.')
     }
   }
 
@@ -455,20 +461,9 @@ export default function AccountManagementPage() {
                           {user.last_login ? format(new Date(user.last_login), 'MMM dd, yyyy HH:mm') : 'Never'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {user.last_login ? 'Set' : 'Not Set'}
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleResetPassword(user.id)}
-                              disabled={resetPasswordMutation.isPending}
-                              className="h-6 px-2 text-xs"
-                            >
-                              {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset'}
-                            </Button>
-                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {user.last_login ? 'Set' : 'Not Set'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Button
@@ -476,10 +471,10 @@ export default function AccountManagementPage() {
                             variant="outline"
                             onClick={() => handleResetPassword(user.id)}
                             disabled={resetPasswordMutation.isPending}
-                            className="bg-blue-50 hover:bg-blue-100"
+                            className="bg-blue-50 hover:bg-blue-100 border-blue-200"
                           >
                             <Key className="h-4 w-4 mr-1" />
-                            Generate New Password
+                            {resetPasswordMutation.isPending ? 'Generating...' : 'Generate New Password'}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -594,17 +589,24 @@ export default function AccountManagementPage() {
           <AlertDescription className="text-green-800">
             <div className="space-y-3">
               <div>
-                <strong className="text-lg">Password Reset Successfully!</strong>
+                <strong className="text-lg">Password Generated Successfully!</strong>
               </div>
-              <div className="bg-white p-3 rounded border">
-                <div className="text-sm text-gray-600 mb-1">New Password:</div>
-                <div className="font-mono text-lg font-bold bg-gray-100 px-3 py-2 rounded border">
-                  {resetPassword}
+              <div className="bg-white p-4 rounded border border-green-200">
+                <div className="space-y-2">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">User Email:</div>
+                    <div className="font-medium text-base">{resetPassword.userEmail}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">New Generated Password:</div>
+                    <div className="font-mono text-lg font-bold bg-gray-100 px-4 py-3 rounded border-2 border-gray-300 break-all">
+                      {resetPassword.password}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="text-sm">
-                <strong>Login Email:</strong> {userAccounts?.find(u => u.id === resetPasswordMutation.variables?.user_id)?.email || 'N/A'}<br />
-                <em className="text-gray-600">Please share these credentials with the user securely.</em>
+              <div className="text-sm text-gray-700">
+                <em>⚠️ Please copy and share these credentials with the user securely. This password will not be shown again.</em>
               </div>
               <div className="flex gap-2">
                 <Button 
@@ -618,13 +620,34 @@ export default function AccountManagementPage() {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(resetPassword);
-                    // You could add a toast notification here
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(resetPassword.password)
+                      alert('Password copied to clipboard!')
+                    } catch (err) {
+                      console.error('Failed to copy:', err)
+                      alert('Failed to copy password. Please copy it manually.')
+                    }
                   }}
                   className="bg-white hover:bg-gray-50"
                 >
                   Copy Password
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const credentials = `Email: ${resetPassword.userEmail}\nPassword: ${resetPassword.password}`
+                      await navigator.clipboard.writeText(credentials)
+                      alert('Credentials copied to clipboard!')
+                    } catch (err) {
+                      console.error('Failed to copy:', err)
+                    }
+                  }}
+                  className="bg-white hover:bg-gray-50"
+                >
+                  Copy All
                 </Button>
               </div>
             </div>

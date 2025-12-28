@@ -252,7 +252,12 @@ export function useTeacherSubjects(teacherId: number | string | undefined) {
 
 export function useAddTeacherSubject() {
   return useApiMutation<TeacherSubject, { teacherId: number; data: CreateTeacherSubjectData }>(
-    ({ teacherId, data }) => api.post(`${endpoints.teacher(teacherId)}add_subject/`, data),
+    ({ teacherId, data }) => {
+      const url = `${endpoints.teacher(teacherId)}add_subject/`
+      // Ensure URL doesn't have double slashes
+      const cleanUrl = url.replace(/([^:]\/)\/+/g, '$1')
+      return api.post(cleanUrl, data)
+    },
     {
       invalidateQueries: [['teacher'], ['teachers']],
       onSuccess: () => {
@@ -279,7 +284,12 @@ export function useTeacherClasses(teacherId: number | string | undefined) {
 
 export function useAddTeacherClass() {
   return useApiMutation<TeacherClass, { teacherId: number; data: CreateTeacherClassData }>(
-    ({ teacherId, data }) => api.post(`${endpoints.teacher(teacherId)}add_class/`, data),
+    ({ teacherId, data }) => {
+      const url = `${endpoints.teacher(teacherId)}add_class/`
+      // Ensure URL doesn't have double slashes
+      const cleanUrl = url.replace(/([^:]\/)\/+/g, '$1')
+      return api.post(cleanUrl, data)
+    },
     {
       invalidateQueries: [['teacher'], ['teachers']],
       onSuccess: () => {

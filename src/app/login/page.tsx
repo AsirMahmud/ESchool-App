@@ -115,10 +115,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleForgotPassword = () => {
-    // Navigate to forgot password page (to be created)
-    router.push('/forgot-password')
-  }
 
   return (
     <PublicRoute>
@@ -226,19 +222,6 @@ export default function LoginPage() {
                   )}
                 />
 
-                {/* Forgot Password Link */}
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="px-0 text-sm text-blue-600 hover:text-blue-800"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
-                  >
-                    Forgot your password?
-                  </Button>
-                </div>
-
                 {/* Login Button */}
                 <Button 
                   type="submit" 
@@ -256,27 +239,6 @@ export default function LoginPage() {
                 </Button>
               </form>
             </Form>
-
-            {/* Demo Accounts */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="text-center text-sm text-gray-600 mb-4">
-                Demo Accounts (for testing)
-              </div>
-              <div className="grid grid-cols-1 gap-2 text-xs">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium text-gray-900">Teacher Account</div>
-                  <div className="text-gray-600">teacher@gmail.com / ZUDhlPQOoWIl</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium text-gray-900">Admin Account</div>
-                  <div className="text-gray-600">asirmahmuhddd@gmail.com / (check database)</div>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <div className="font-medium text-gray-900">Student Account</div>
-                  <div className="text-gray-600">asirmahmdsdfuhddd@gmail.com / (check database)</div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

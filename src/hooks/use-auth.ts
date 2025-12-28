@@ -53,16 +53,26 @@ export function useLogout() {
       // Remove tokens
       tokenUtils.removeTokens()
       
-      // Clear user data from cache
-      queryClient.removeQueries({ queryKey: ['user'] })
+      // Clear all query cache
       queryClient.clear()
+      queryClient.removeQueries()
+      
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear()
+      }
     },
     onError: (error) => {
       console.error('Logout failed:', error)
       // Even if logout fails, clear local data
       tokenUtils.removeTokens()
-      queryClient.removeQueries({ queryKey: ['user'] })
       queryClient.clear()
+      queryClient.removeQueries()
+      
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear()
+      }
     },
   })
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -69,16 +69,19 @@ const studentFormSchema = z.object({
 type StudentFormValues = z.infer<typeof studentFormSchema>
 
 interface EditStudentPageProps {
-  params: {
-    id: string
-  }
+  params: Promise<{ id: string }> | { id: string }
 }
 
 export default function EditStudentPage({ params }: EditStudentPageProps) {
   const router = useRouter()
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null)
   
-  const { data: student, isLoading: studentLoading, error: studentError } = useStudent(params.id)
+  // Unwrap params if it's a Promise (Next.js 15+)
+  const resolvedParams = use(params as any)
+  const studentId = resolvedParams?.id || ''
+  
+  // Don't fetch if studentId is not available yet
+  const { data: student, isLoading: studentLoading, error: studentError } = useStudent(studentId)
   const { data: levels, isLoading: levelsLoading } = useLevels()
   const { data: sections, isLoading: sectionsLoading } = useSections()
   const { data: departments, isLoading: departmentsLoading } = useDepartments()
@@ -139,7 +142,7 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
   const onSubmit = async (values: StudentFormValues) => {
     try {
       const submitData: UpdateStudentData = {
-        s_id: params.id,
+        s_id: studentId,
         ...values,
         date_of_birth: format(values.date_of_birth, 'yyyy-MM-dd'),
         enroll_date: format(values.enroll_date, 'yyyy-MM-dd'),
@@ -165,7 +168,7 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
     selectedLevel ? section.level === selectedLevel : true
   ) || []
 
-  if (studentLoading) {
+  if (!studentId || studentLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -302,9 +305,9 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem key="male" value="male">Male</SelectItem>
+                            <SelectItem key="female" value="female">Female</SelectItem>
+                            <SelectItem key="other" value="other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -456,7 +459,7 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                         <FormLabel>Level *</FormLabel>
                         <Select 
                           onValueChange={(value) => handleLevelChange(parseInt(value))} 
-                          value={field.value ? field.value.toString() : ""}
+                          value={field.value != null ? String(field.value) : undefined}
                           disabled={levelsLoading}
                         >
                           <FormControl>
@@ -465,8 +468,8 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {levels?.map((level) => (
-                              <SelectItem key={level.level_no} value={level.level_no.toString()}>
+                            {levels?.filter(level => level.level_no != null).map((level) => (
+                              <SelectItem key={level.level_no} value={String(level.level_no)}>
                                 {level.level_name}
                               </SelectItem>
                             ))}
@@ -485,7 +488,7 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                         <FormLabel>Section</FormLabel>
                         <Select 
                           onValueChange={(value) => field.onChange(parseInt(value))} 
-                          value={field.value ? field.value.toString() : ""}
+                          value={field.value != null ? String(field.value) : undefined}
                           disabled={sectionsLoading || !selectedLevel}
                         >
                           <FormControl>
@@ -494,8 +497,8 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableSections.map((section) => (
-                              <SelectItem key={section.id} value={section.id.toString()}>
+                            {availableSections.filter(section => section.id != null).map((section) => (
+                              <SelectItem key={section.id} value={String(section.id)}>
                                 {section.section_name}
                               </SelectItem>
                             ))}
@@ -517,7 +520,7 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                         <FormLabel>Department</FormLabel>
                         <Select 
                           onValueChange={(value) => field.onChange(parseInt(value))} 
-                          value={field.value ? field.value.toString() : ""}
+                          value={field.value != null ? String(field.value) : undefined}
                           disabled={departmentsLoading}
                         >
                           <FormControl>
@@ -526,8 +529,8 @@ export default function EditStudentPage({ params }: EditStudentPageProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {departments?.map((department) => (
-                              <SelectItem key={department.id} value={department.id.toString()}>
+                            {departments?.filter(department => department.id != null).map((department) => (
+                              <SelectItem key={department.id} value={String(department.id)}>
                                 {department.d_name}
                               </SelectItem>
                             ))}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useApiQuery, useApiMutation } from './use-api'
 import { api } from '@/lib/api'
 
@@ -57,6 +58,8 @@ export function useAdminLogin() {
 }
 
 export function useAdminLogout() {
+  const queryClient = useQueryClient()
+  
   return useApiMutation<void, void>(
     () => api.post('/auth/logout/'),
     {
@@ -65,6 +68,10 @@ export function useAdminLogout() {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         localStorage.removeItem('user')
+        
+        // Clear all query cache
+        queryClient.clear()
+        queryClient.removeQueries()
       },
       onError: (error) => {
         console.error('Logout failed:', error)
@@ -72,6 +79,10 @@ export function useAdminLogout() {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
         localStorage.removeItem('user')
+        
+        // Clear all query cache even on error
+        queryClient.clear()
+        queryClient.removeQueries()
       },
     }
   )

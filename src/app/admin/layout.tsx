@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Bell,
@@ -37,11 +37,27 @@ import { useAdminLogout, useIsAdminAuthenticated } from "@/hooks/use-admin-auth"
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user } = useIsAdminAuthenticated()
   const logoutMutation = useAdminLogout()
 
-  const handleLogout = () => {
-    logoutMutation.mutate()
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      // Clear any session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear()
+      }
+      // Redirect to login page - use replace to prevent back navigation
+      router.replace('/login')
+      // Force a hard reload to ensure all state is cleared
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 100)
+    }
   }
 
   // Don't wrap login page with AdminAuthWrapper
@@ -142,9 +158,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="p-4 border-t">
-          <Button className="w-full flex items-center gap-2">
+          <Button 
+            className="w-full flex items-center gap-2"
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+          >
             <LogOut className="h-4 w-4" />
-            <span>Logout</span>
+            <span>{logoutMutation.isPending ? 'Logging out...' : 'Logout'}</span>
           </Button>
         </div>
       </aside>

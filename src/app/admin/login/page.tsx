@@ -123,12 +123,6 @@ export default function AdminLoginPage() {
             </form>
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Demo credentials: admin@school.com / admin123
-          </p>
-        </div>
       </div>
     </div>
   )

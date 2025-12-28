@@ -103,7 +103,7 @@ export interface StudentPaymentRequest {
 }
 
 export interface SalaryPaymentRequest {
-  employee: number
+  employee: string
   salary_type: string
   amount: string
   month: string
@@ -125,18 +125,18 @@ export function useFinancialTransactions(params?: {
   start_date?: string
   end_date?: string
 }) {
-  return useApiQuery({
-    queryKey: ['financial-transactions', params],
-    queryFn: () => api.get('/financial-transactions/', { params }),
-  })
+  return useApiQuery(
+    ['financial-transactions', params],
+    () => api.get('/financial-transactions/', { params })
+  )
 }
 
 export function useFinancialTransaction(id: number) {
-  return useApiQuery({
-    queryKey: ['financial-transaction', id],
-    queryFn: () => api.get(`/financial-transactions/${id}/`),
-    enabled: !!id,
-  })
+  return useApiQuery(
+    ['financial-transaction', id],
+    () => api.get(`/financial-transactions/${id}/`),
+    { enabled: !!id }
+  )
 }
 
 export function useCreateFinancialTransaction() {
@@ -160,10 +160,10 @@ export function useUpdateFinancialTransaction() {
 }
 
 export function useDeleteFinancialTransaction() {
-  return useApiMutation({
-    mutationFn: (id: number) => api.delete(`/financial-transactions/${id}/`),
-    invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']],
-  })
+  return useApiMutation(
+    (id: number) => api.delete(`/financial-transactions/${id}/`),
+    { invalidateQueries: [['financial-transactions'], ['financial-overview'], ['monthly-trend']] }
+  )
 }
 
 // Financial Overview
@@ -171,20 +171,18 @@ export function useFinancialOverview(params?: {
   start_date?: string
   end_date?: string
 }) {
-  return useApiQuery({
-    queryKey: ['financial-overview', params],
-    queryFn: () => api.get('/financial-transactions/overview/', { params }),
-  })
+  return useApiQuery(
+    ['financial-overview', params],
+    () => api.get('/financial-transactions/overview/', { params })
+  )
 }
 
 // Monthly Trends
 export function useMonthlyTrend(year?: number) {
-  return useApiQuery({
-    queryKey: ['monthly-trend', year],
-    queryFn: () => api.get('/financial-transactions/monthly_trend/', { 
-      params: year ? { year } : {} 
-    }),
-  })
+  return useApiQuery(
+    ['monthly-trend', year],
+    () => api.get('/financial-transactions/monthly_trend/', { params: year ? { year } : {} })
+  )
 }
 
 // Category Breakdown
@@ -193,10 +191,10 @@ export function useCategoryBreakdown(params?: {
   start_date?: string
   end_date?: string
 }) {
-  return useApiQuery({
-    queryKey: ['category-breakdown', params],
-    queryFn: () => api.get('/financial-transactions/category_breakdown/', { params }),
-  })
+  return useApiQuery(
+    ['category-breakdown', params],
+    () => api.get('/financial-transactions/category_breakdown/', { params })
+  )
 }
 
 // Student Payment Recording
@@ -255,18 +253,18 @@ export function useFinancialSummaries(params?: {
   year?: number
   month?: number
 }) {
-  return useApiQuery({
-    queryKey: ['financial-summaries', params],
-    queryFn: () => api.get('/financial-summaries/', { params }),
-  })
+  return useApiQuery(
+    ['financial-summaries', params],
+    () => api.get('/financial-summaries/', { params })
+  )
 }
 
 export function useGenerateFinancialSummary() {
-  return useApiMutation({
-    mutationFn: (data: { period_type: string; year: number; month?: number }) =>
+  return useApiMutation(
+    (data: { period_type: string; year: number; month?: number }) =>
       api.post('/financial-summaries/generate_summary/', data),
-    invalidateQueries: [['financial-summaries']],
-  })
+    { invalidateQueries: [['financial-summaries']] }
+  )
 }
 
 // Hooks for Budgets
@@ -276,63 +274,62 @@ export function useBudgets(params?: {
   year?: number
   is_active?: boolean
 }) {
-  return useApiQuery({
-    queryKey: ['budgets', params],
-    queryFn: () => api.get('/budgets/', { params }),
-  })
+  return useApiQuery(
+    ['budgets', params],
+    () => api.get('/budgets/', { params })
+  )
 }
 
 export function useBudget(id: number) {
-  return useApiQuery({
-    queryKey: ['budget', id],
-    queryFn: () => api.get(`/budgets/${id}/`),
-    enabled: !!id,
-  })
+  return useApiQuery(
+    ['budget', id],
+    () => api.get(`/budgets/${id}/`),
+    { enabled: !!id }
+  )
 }
 
 export function useCreateBudget() {
-  return useApiMutation({
-    mutationFn: (data: Partial<Budget>) =>
-      api.post('/budgets/', data),
-    invalidateQueries: [['budgets']],
-  })
+  return useApiMutation(
+    (data: Partial<Budget>) => api.post('/budgets/', data),
+    { invalidateQueries: [['budgets']] }
+  )
 }
 
 export function useUpdateBudget() {
-  return useApiMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Partial<Budget>) =>
+  return useApiMutation(
+    ({ id, ...data }: { id: number } & Partial<Budget>) =>
       api.patch(`/budgets/${id}/`, data),
-    invalidateQueries: [['budgets']],
-  })
+    { invalidateQueries: [['budgets']] }
+  )
 }
 
 export function useDeleteBudget() {
-  return useApiMutation({
-    mutationFn: (id: number) => api.delete(`/budgets/${id}/`),
-    invalidateQueries: [['budgets']],
-  })
+  return useApiMutation(
+    (id: number) => api.delete(`/budgets/${id}/`),
+    { invalidateQueries: [['budgets']] }
+  )
 }
 
 export function useCurrentYearBudgets() {
-  return useApiQuery({
-    queryKey: ['current-year-budgets'],
-    queryFn: () => api.get('/budgets/current_year/'),
-  })
+  return useApiQuery(
+    ['current-year-budgets'],
+    () => api.get('/budgets/current_year/')
+  )
 }
 
 export function useOverBudgetItems() {
-  return useApiQuery({
-    queryKey: ['over-budget-items'],
-    queryFn: () => api.get('/budgets/over_budget/'),
-  })
+  return useApiQuery(
+    ['over-budget-items'],
+    () => api.get('/budgets/over_budget/')
+  )
 }
 
 export function useUpdateBudgetActual() {
-  return useApiMutation({
-    mutationFn: ({ id, actual_amount }: { id: number; actual_amount: number }) =>
+  return useApiMutation(
+    ({ id, actual_amount }: { id: number; actual_amount: number }) =>
       api.post(`/budgets/${id}/update_actual/`, { actual_amount }),
-    invalidateQueries: [['budgets'], ['over-budget-items']],
-  })
+    { invalidateQueries: [['budgets'], ['over-budget-items']] }
+  )
 }
 
 // Utility functions

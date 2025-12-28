@@ -58,11 +58,15 @@ export default function TeacherLayout({
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync()
-      router.push('/login')
     } catch (error) {
       console.error('Logout failed:', error)
-      // Force logout even if API call fails
-      router.push('/login')
+    } finally {
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear()
+      }
+      // Use replace to prevent back navigation to protected pages
+      router.replace('/login')
     }
   }
 

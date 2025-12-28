@@ -55,17 +55,18 @@ import {
   X,
   Calendar,
 } from "lucide-react";
-import { useTeachers, useDeleteTeacher, useCreateTeacher, useAddTeacherSubject, useAddTeacherClass } from "@/hooks/use-teachers";
+import { useTeachers, useDeleteTeacher, useCreateTeacher, useAddTeacherSubject, useAddTeacherClass, useTeacherSubjects, useTeacherClasses, TeacherSubject, TeacherClass } from "@/hooks/use-teachers";
 import { useEmployees, useCreateEmployee } from "@/hooks/use-employees";
 import { useDepartments } from "@/hooks/use-departments";
 import { useSubjects } from "@/hooks/use-subjects";
 import { useClasses } from "@/hooks/use-classes";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { api, endpoints } from "@/lib/api";
 
 export default function AdminTeachersPage() {
   const router = useRouter()
@@ -79,7 +80,7 @@ export default function AdminTeachersPage() {
   const [assignmentForm, setAssignmentForm] = useState({
     teacher_id: "",
     subject: "",
-    class_room: "",
+    class_room: "" as string | undefined,
     start_date: "",
     end_date: "",
     schedule_days: [] as string[],
@@ -99,6 +100,10 @@ export default function AdminTeachersPage() {
   const createTeacherMutation = useCreateTeacher()
   const addSubjectMutation = useAddTeacherSubject()
   const addClassMutation = useAddTeacherClass()
+
+  // State for subject assignments
+  const [subjectAssignments, setSubjectAssignments] = useState<(TeacherSubject & { teacher_name?: string; class_room_name?: string })[]>([])
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false)
 
   // Form state for adding teacher
   const [teacherForm, setTeacherForm] = useState({
@@ -139,26 +144,120 @@ export default function AdminTeachersPage() {
     }
   }
 
+  // Load subject assignments
+  useEffect(() => {
+    const loadAssignments = async () => {
+      if (!teachers || teachers.length === 0 || isLoading) return
+      
+      setIsLoadingAssignments(true)
+      try {
+        const allAssignments: (TeacherSubject & { teacher_name?: string; class_room_name?: string })[] = []
+        
+        // Fetch assignments for each teacher
+        for (const teacher of teachers) {
+          try {
+            const teacherId = teacher.teacher_id.toString()
+            const subjectsData: any = await api.get(`${endpoints.teacher(teacherId)}subjects/`)
+            const classesData: any = await api.get(`${endpoints.teacher(teacherId)}classes/`)
+            
+            const teacherSubjects = Array.isArray(subjectsData) ? subjectsData : (subjectsData?.results || [])
+            const teacherClasses = Array.isArray(classesData) ? classesData : (classesData?.results || [])
+            
+            // Combine subject and class data
+            teacherSubjects.forEach((ts: TeacherSubject) => {
+              // Find matching class by comparing subject codes or names
+              const tsSubjectCode = ts.subject_code || String(ts.subject)
+              const tsSubjectName = ts.subject_name || ''
+              
+              const matchingClass = teacherClasses.find((tc: TeacherClass) => {
+                // Get subject code from TeacherClass - could be string (code) or number (ID)
+                let tcSubjectCode = ''
+                if (typeof tc.subject === 'string') {
+                  tcSubjectCode = tc.subject
+                } else if (tc.subject_name && subjects) {
+                  // Try to find subject by name
+                  const foundSubject = subjects.find(s => s.s_name === tc.subject_name)
+                  tcSubjectCode = foundSubject?.s_code || String(tc.subject)
+                } else {
+                  // Fallback to string conversion
+                  tcSubjectCode = String(tc.subject)
+                }
+                
+                // Try matching by subject code
+                if (tcSubjectCode === tsSubjectCode) return true
+                
+                // Try matching by subject name
+                if (tc.subject_name && tsSubjectName && tc.subject_name === tsSubjectName) return true
+                
+                // Try direct comparison
+                if (String(tc.subject) === String(ts.subject)) return true
+                if (String(tc.subject) === tsSubjectCode) return true
+                
+                return false
+              })
+              
+              allAssignments.push({
+                ...ts,
+                teacher_name: teacher.teacher_name,
+                class_room_name: matchingClass?.class_room_name || '—'
+              })
+            })
+            
+            // Also add classes that don't have corresponding subjects (standalone class assignments)
+            teacherClasses.forEach((tc: TeacherClass) => {
+              const tcSubjectCode = typeof tc.subject === 'string' ? tc.subject : 
+                (subjects?.find(s => s.s_code === String(tc.subject))?.s_code || String(tc.subject))
+              const tcSubjectName = tc.subject_name || ''
+              
+              const hasMatchingSubject = teacherSubjects.some((ts: TeacherSubject) => {
+                const tsSubjectCode = ts.subject_code || String(ts.subject)
+                const tsSubjectName = ts.subject_name || ''
+                return tsSubjectCode === tcSubjectCode || 
+                       tsSubjectName === tcSubjectName ||
+                       String(ts.subject) === String(tc.subject)
+              })
+              
+              if (!hasMatchingSubject) {
+                allAssignments.push({
+                  id: tc.id,
+                  teacher: tc.teacher,
+                  teacher_name: teacher.teacher_name,
+                  subject: tc.subject,
+                  subject_name: tc.subject_name || 'Unknown',
+                  subject_code: tcSubjectCode,
+                  is_active: tc.is_active,
+                  start_date: tc.start_date,
+                  end_date: tc.end_date,
+                  class_room_name: tc.class_room_name || '—'
+                })
+              }
+            })
+          } catch (err) {
+            console.error(`Failed to load assignments for teacher ${teacher.teacher_id}:`, err)
+          }
+        }
+        
+        setSubjectAssignments(allAssignments)
+      } catch (error) {
+        console.error('Failed to load subject assignments:', error)
+      } finally {
+        setIsLoadingAssignments(false)
+      }
+    }
+    
+    loadAssignments()
+  }, [teachers, isLoading])
+
   const handleAssignSubject = async () => {
-    if (!assignmentForm.teacher_id || !assignmentForm.subject || !assignmentForm.class_room || !assignmentForm.start_date) {
-      alert('Please fill in all required fields (Teacher, Subject, Class, Start Date)')
+    if (!assignmentForm.teacher_id || !assignmentForm.subject || !assignmentForm.start_date) {
+      alert('Please fill in all required fields (Teacher, Subject, Start Date)')
       return
     }
 
     try {
-      console.log('Assignment form data:', assignmentForm)
-      console.log('Available teachers:', teachers)
-      console.log('Available subjects:', subjects)
-      console.log('Available classes:', classes)
-      
       // Validate that the selected data exists
       const selectedTeacher = teachers?.find(t => t.teacher_id.toString() === assignmentForm.teacher_id)
       const selectedSubject = subjects?.find(s => s.s_code === assignmentForm.subject)
-      const selectedClass = classes?.find(c => c.id.toString() === assignmentForm.class_room)
-      
-      console.log('Selected teacher:', selectedTeacher)
-      console.log('Selected subject:', selectedSubject)
-      console.log('Selected class:', selectedClass)
       
       if (!selectedTeacher) {
         alert('Selected teacher not found')
@@ -168,67 +267,127 @@ export default function AdminTeachersPage() {
         alert('Selected subject not found')
         return
       }
-      if (!selectedClass) {
-        alert('Selected class not found')
-        return
-      }
       
       const assignmentData = {
-        subject: assignmentForm.subject, // Use subject code directly (string)
+        subject: assignmentForm.subject, // Subject code (string)
         start_date: assignmentForm.start_date,
-        end_date: assignmentForm.end_date || undefined,
+        end_date: assignmentForm.end_date || null,
       }
 
-      console.log('Assigning subject to teacher:', {
+      // Assign subject to teacher
+      await addSubjectMutation.mutateAsync({
         teacherId: parseInt(assignmentForm.teacher_id),
         data: assignmentData
       })
-      
-      const subjectResult = await addSubjectMutation.mutateAsync({
-        teacherId: parseInt(assignmentForm.teacher_id),
-        data: assignmentData
-      })
-      
-      console.log('Subject assignment result:', subjectResult)
 
       // Also assign the class if selected
-      if (assignmentForm.class_room) {
+      if (assignmentForm.class_room && assignmentForm.class_room !== "") {
+        const selectedClass = classes?.find(c => c.id.toString() === assignmentForm.class_room)
+        if (!selectedClass) {
+          alert('Selected class not found')
+          return
+        }
+        
         const classData = {
           class_room: parseInt(assignmentForm.class_room),
-          subject: assignmentForm.subject, // Use subject code directly (string)
+          subject: assignmentForm.subject, // Subject code (string)
           start_date: assignmentForm.start_date,
-          end_date: assignmentForm.end_date || undefined,
+          end_date: assignmentForm.end_date || null,
         }
-
-        console.log('Assigning class to teacher:', {
+        
+        await addClassMutation.mutateAsync({
           teacherId: parseInt(assignmentForm.teacher_id),
           data: classData
         })
-        
-        const classResult = await addClassMutation.mutateAsync({
-          teacherId: parseInt(assignmentForm.teacher_id),
-          data: classData
-        })
-        
-        console.log('Class assignment result:', classResult)
       }
 
-      alert('Subject and class assigned successfully!')
+      // Reload assignments
+      const teacherId = assignmentForm.teacher_id
+      const subjectsData: any = await api.get(`${endpoints.teacher(teacherId)}subjects/`)
+      const classesData: any = await api.get(`${endpoints.teacher(teacherId)}classes/`)
+      
+      const teacherSubjects = Array.isArray(subjectsData) ? subjectsData : (subjectsData?.results || [])
+      const teacherClasses = Array.isArray(classesData) ? classesData : (classesData?.results || [])
+      
+      // Update assignments list
+      const newAssignments = teacherSubjects.map((ts: TeacherSubject) => {
+        const tsSubjectCode = ts.subject_code || String(ts.subject)
+        const tsSubjectName = ts.subject_name || ''
+        
+        const matchingClass = teacherClasses.find((tc: TeacherClass) => {
+          const tcSubjectCode = typeof tc.subject === 'string' ? tc.subject : 
+            (subjects?.find(s => s.s_code === String(tc.subject))?.s_code || String(tc.subject))
+          const tcSubjectName = tc.subject_name || ''
+          
+          return tcSubjectCode === tsSubjectCode || 
+                 tcSubjectName === tsSubjectName ||
+                 String(tc.subject) === String(ts.subject) ||
+                 String(tc.subject) === tsSubjectCode
+        })
+        
+        return {
+          ...ts,
+          teacher_name: selectedTeacher.teacher_name,
+          class_room_name: matchingClass?.class_room_name || '—'
+        }
+      })
+      
+      // Also add any standalone class assignments
+      teacherClasses.forEach((tc: TeacherClass) => {
+        const tcSubjectCode = typeof tc.subject === 'string' ? tc.subject : 
+          (subjects?.find(s => s.s_code === String(tc.subject))?.s_code || String(tc.subject))
+        const tcSubjectName = tc.subject_name || ''
+        
+        const hasMatchingSubject = teacherSubjects.some((ts: TeacherSubject) => {
+          const tsSubjectCode = ts.subject_code || String(ts.subject)
+          const tsSubjectName = ts.subject_name || ''
+          return tsSubjectCode === tcSubjectCode || 
+                 tsSubjectName === tcSubjectName ||
+                 String(ts.subject) === String(tc.subject)
+        })
+        
+        if (!hasMatchingSubject) {
+          newAssignments.push({
+            id: tc.id,
+            teacher: tc.teacher,
+            teacher_name: selectedTeacher.teacher_name,
+            subject: tc.subject,
+            subject_name: tc.subject_name || 'Unknown',
+            subject_code: tcSubjectCode,
+            is_active: tc.is_active,
+            start_date: tc.start_date,
+            end_date: tc.end_date,
+            class_room_name: tc.class_room_name || '—'
+          })
+        }
+      })
+      
+      setSubjectAssignments(prev => {
+        const filtered = prev.filter(a => 
+          !(a.teacher === parseInt(teacherId) && a.subject === assignmentForm.subject)
+        )
+        return [...filtered, ...newAssignments]
+      })
+
+      alert('Subject assigned successfully!')
       setIsAddSubjectOpen(false)
       setAssignmentForm({
         teacher_id: "",
         subject: "",
-        class_room: "",
+        class_room: undefined,
         start_date: "",
         end_date: "",
         schedule_days: [],
         start_time: "",
         end_time: "",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to assign subject:', error)
-      console.error('Error details:', error)
-      alert(`Failed to assign subject: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message || 
+                          error?.message || 
+                          'Unknown error occurred'
+      alert(`Failed to assign subject: ${errorMessage}`)
     }
   }
 
@@ -864,13 +1023,13 @@ export default function AdminTeachersPage() {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="class-select">Class *</Label>
+                        <Label htmlFor="class-select">Class (Optional)</Label>
                         <Select 
-                          value={assignmentForm.class_room} 
+                          value={assignmentForm.class_room || undefined} 
                           onValueChange={(value) => setAssignmentForm({ ...assignmentForm, class_room: value })}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select class" />
+                            <SelectValue placeholder="Select class (optional)" />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.isArray(classes) && classes.map((cls) => (
@@ -880,6 +1039,17 @@ export default function AdminTeachersPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {assignmentForm.class_room && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => setAssignmentForm({ ...assignmentForm, class_room: undefined })}
+                          >
+                            Clear selection
+                          </Button>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -965,78 +1135,84 @@ export default function AdminTeachersPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Schedule</TableHead>
-                    <TableHead>Students</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[
-                    {
-                      id: 1,
-                      teacher: "Dr. Robert Johnson",
-                      subject: "Physics",
-                      class: "12A",
-                      schedule: "Mon, Wed, Fri (10:00 - 11:00 AM)",
-                      students: 32,
-                    },
-                    {
-                      id: 2,
-                      teacher: "Dr. Robert Johnson",
-                      subject: "Chemistry",
-                      class: "11B",
-                      schedule: "Tue, Thu (09:00 - 10:30 AM)",
-                      students: 28,
-                    },
-                    {
-                      id: 3,
-                      teacher: "Sarah Williams",
-                      subject: "Mathematics",
-                      class: "10A",
-                      schedule: "Mon, Tue, Wed (08:00 - 09:00 AM)",
-                      students: 35,
-                    },
-                    {
-                      id: 4,
-                      teacher: "Michael Brown",
-                      subject: "English Literature",
-                      class: "12C",
-                      schedule: "Wed, Fri (01:00 - 02:30 PM)",
-                      students: 30,
-                    },
-                    {
-                      id: 5,
-                      teacher: "Emily Davis",
-                      subject: "History",
-                      class: "9B",
-                      schedule: "Mon, Thu (11:00 AM - 12:00 PM)",
-                      students: 33,
-                    },
-                  ].map((assignment) => (
-                    <TableRow key={assignment.id}>
-                      <TableCell>{assignment.teacher}</TableCell>
-                      <TableCell>{assignment.subject}</TableCell>
-                      <TableCell>{assignment.class}</TableCell>
-                      <TableCell>{assignment.schedule}</TableCell>
-                      <TableCell>{assignment.students}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          Remove
-                        </Button>
-                      </TableCell>
+              {isLoadingAssignments ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading assignments...</div>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {subjectAssignments.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          No subject assignments found. Create a new assignment to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      subjectAssignments.map((assignment) => (
+                        <TableRow key={`${assignment.teacher}-${assignment.subject}-${assignment.id}`}>
+                          <TableCell className="font-medium">
+                            {assignment.teacher_name || 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{assignment.subject_name || assignment.subject_code}</div>
+                              <div className="text-xs text-muted-foreground">{assignment.subject_code}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {assignment.class_room_name && assignment.class_room_name !== '—' 
+                              ? assignment.class_room_name 
+                              : 'Not assigned'}
+                          </TableCell>
+                          <TableCell>
+                            {assignment.start_date ? format(new Date(assignment.start_date), 'MMM dd, yyyy') : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {assignment.end_date ? format(new Date(assignment.end_date), 'MMM dd, yyyy') : '—'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={assignment.is_active ? "default" : "secondary"}>
+                              {assignment.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={async () => {
+                                if (confirm('Are you sure you want to remove this assignment?')) {
+                                  try {
+                                    // Note: You may need to implement a delete endpoint
+                                    // For now, we'll just show a message
+                                    alert('Delete functionality will be implemented with the backend API')
+                                  } catch (error) {
+                                    console.error('Failed to remove assignment:', error)
+                                    alert('Failed to remove assignment')
+                                  }
+                                }
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

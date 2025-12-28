@@ -54,6 +54,8 @@ import { useLevels, useCreateLevel } from "@/hooks/use-levels";
 import { useClasses } from "@/hooks/use-classes";
 import { api, endpoints } from "@/lib/api";
 import { Combobox } from "@/components/ui/combobox";
+import { useEffect } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 export default function AdminSubjectsPage() {
   const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false);
@@ -108,6 +110,69 @@ export default function AdminSubjectsPage() {
   const [levelSubjectsForLevel, setLevelSubjectsForLevel] = useState<any[]>([]);
   const [selectedLevelSubject, setSelectedLevelSubject] = useState<string>('');
   const [teacherBySectionForSubject, setTeacherBySectionForSubject] = useState<{[sectionId: number]: string}>({});
+  const [expandedLevels, setExpandedLevels] = useState<Set<number>>(new Set());
+  const [hierarchyData, setHierarchyData] = useState<any[]>([]);
+  const [isLoadingHierarchy, setIsLoadingHierarchy] = useState(false);
+
+  // Load hierarchy data
+  useEffect(() => {
+    const loadHierarchy = async () => {
+      if (!levels || !Array.isArray(levels) || levels.length === 0) return;
+      
+      setIsLoadingHierarchy(true);
+      try {
+        const data: any[] = [];
+        
+        for (const level of levels) {
+          // Get sections for this level
+          const sectionsData: any = await api.get(`${endpoints.sections}?level=${level.level_no}`);
+          const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.results || []);
+          
+          const levelData = {
+            level,
+            sections: [] as any[]
+          };
+          
+          for (const section of sections) {
+            // Get section subjects for this section
+            const sectionSubjectsData: any = await api.get(`${endpoints.sectionSubjects}?section=${section.id}`);
+            const sectionSubjects = Array.isArray(sectionSubjectsData) ? sectionSubjectsData : (sectionSubjectsData?.results || []);
+            
+            const sectionData = {
+              section,
+              subjects: sectionSubjects.map((ss: any) => {
+                const subject = subjects?.find((s: any) => s.s_code === ss.subject || s.s_code === ss.subject_code);
+                const teacher = teachers?.find((t: any) => {
+                  const teacherId = t.teacher_id || t.id;
+                  return String(teacherId) === String(ss.teacher);
+                });
+                
+                return {
+                  ...ss,
+                  subject_name: subject?.s_name || ss.subject_name || 'Unknown',
+                  subject_code: subject?.s_code || ss.subject_code || ss.subject,
+                  teacher_name: teacher?.teacher_name || 'Not assigned',
+                  teacher_id: ss.teacher
+                };
+              })
+            };
+            
+            levelData.sections.push(sectionData);
+          }
+          
+          data.push(levelData);
+        }
+        
+        setHierarchyData(data);
+      } catch (error) {
+        console.error('Failed to load hierarchy:', error);
+      } finally {
+        setIsLoadingHierarchy(false);
+      }
+    };
+    
+    loadHierarchy();
+  }, [levels, teachers, subjects]);
 
   const handleCreateSubject = async () => {
     try {
@@ -139,7 +204,7 @@ export default function AdminSubjectsPage() {
       s_name: subject.s_name || subject.name || "",
       s_code: subject.s_code || subject.code || "",
       description: subject.description || "",
-      department: subject.department || "",
+      department: subject.department || subject.department_name || "",
       subject_type: subject.subject_type || "core",
       difficulty_level: subject.difficulty_level || "beginner",
       
@@ -338,7 +403,8 @@ export default function AdminSubjectsPage() {
   const filteredSubjects = subjects?.filter((subject: any) => {
     const matchesSearch = (subject.s_name || subject.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (subject.s_code || subject.code || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDepartment = selectedDepartment === "all" || subject.department === selectedDepartment;
+    const subjectDept = subject.department || subject.department_name || '';
+    const matchesDepartment = selectedDepartment === "all" || subjectDept === selectedDepartment;
     return matchesSearch && matchesDepartment;
   });
 
@@ -370,6 +436,7 @@ export default function AdminSubjectsPage() {
           <TabsTrigger value="subjects">Subjects</TabsTrigger>
           <TabsTrigger value="levels">Levels</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
+          <TabsTrigger value="hierarchy">Level → Section → Subject → Teacher</TabsTrigger>
         </TabsList>
 
         <TabsContent value="subjects" className="space-y-4">
@@ -647,7 +714,6 @@ export default function AdminSubjectsPage() {
                 <TableHead>Code</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Department</TableHead>
-                <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -655,7 +721,7 @@ export default function AdminSubjectsPage() {
             <TableBody>
               {filteredSubjects?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     No subjects found.
                   </TableCell>
                 </TableRow>
@@ -671,7 +737,7 @@ export default function AdminSubjectsPage() {
                         {subject.subject_type?.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Core'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{subject.department}</TableCell>
+                    <TableCell>{subject.department || subject.department_name || '—'}</TableCell>
                     <TableCell>
                       <Badge variant={subject.is_active !== false ? "default" : "secondary"}>
                         {subject.is_active !== false ? "Active" : "Inactive"}
@@ -894,6 +960,136 @@ export default function AdminSubjectsPage() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hierarchy" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Level → Section → Subject → Teacher Hierarchy</CardTitle>
+              <CardDescription>
+                View all assignments organized by level, section, subject, and teacher
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingHierarchy ? (
+                <div className="flex items-center justify-center py-8">Loading hierarchy...</div>
+              ) : hierarchyData.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">No data available</div>
+              ) : (
+                <div className="space-y-2">
+                  {hierarchyData.map(({ level, sections }) => {
+                    const isExpanded = expandedLevels.has(level.level_no);
+                    
+                    return (
+                      <div key={level.level_no} className="border rounded-lg">
+                        <div 
+                          className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                          onClick={() => {
+                            setExpandedLevels(prev => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(level.level_no)) {
+                                newSet.delete(level.level_no);
+                              } else {
+                                newSet.add(level.level_no);
+                              }
+                              return newSet;
+                            });
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                            <div>
+                              <div className="font-semibold text-lg">{level.level_name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Level {level.level_no} • {sections.length} section{sections.length !== 1 ? 's' : ''}
+                                {(() => {
+                                  const levelRoom = Array.isArray(classrooms) ? classrooms.find((c: any) => c.id === level.classroom) : null;
+                                  return levelRoom ? ` • Room: ${levelRoom.room_name || `Room ${levelRoom.room_no}`}` : '';
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {isExpanded && (
+                          <div className="border-t">
+                            {sections.length === 0 ? (
+                              <div className="p-4 text-sm text-muted-foreground">No sections found</div>
+                            ) : (
+                              sections.map(({ section, subjects: sectionSubjects }: any) => (
+                                <div key={section.id} className="border-b last:border-b-0">
+                                  <div className="p-3 bg-muted/30">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="font-medium">{section.section_name || `${level.level_name}-${section.sec_no}`}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {sectionSubjects.length} subject{sectionSubjects.length !== 1 ? 's' : ''} assigned
+                                        </div>
+                                      </div>
+                                      {section.room_name && (
+                                        <div className="text-right">
+                                          <Badge variant="outline" className="text-sm">
+                                            Room: {section.room_name}
+                                          </Badge>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {sectionSubjects.length === 0 ? (
+                                    <div className="p-3 text-sm text-muted-foreground">No subjects assigned</div>
+                                  ) : (
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Subject</TableHead>
+                                          <TableHead>Code</TableHead>
+                                          <TableHead>Teacher</TableHead>
+                                          <TableHead>Room</TableHead>
+                                          <TableHead>Status</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {sectionSubjects.map((ss: any) => (
+                                          <TableRow key={ss.id}>
+                                            <TableCell className="font-medium">{ss.subject_name}</TableCell>
+                                            <TableCell>
+                                              <Badge variant="outline">{ss.subject_code}</Badge>
+                                            </TableCell>
+                                            <TableCell>{ss.teacher_name}</TableCell>
+                                            <TableCell>
+                                              {section.room_name ? (
+                                                <Badge variant="secondary">{section.room_name}</Badge>
+                                              ) : (
+                                                <span className="text-muted-foreground text-sm">—</span>
+                                              )}
+                                            </TableCell>
+                                            <TableCell>
+                                              <Badge variant={ss.is_active ? "default" : "secondary"}>
+                                                {ss.is_active ? "Active" : "Inactive"}
+                                              </Badge>
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

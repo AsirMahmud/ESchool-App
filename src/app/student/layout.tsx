@@ -43,10 +43,15 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync()
-      router.push('/login')
     } catch (error) {
       console.error('Logout failed:', error)
-      router.push('/login')
+    } finally {
+      // Clear session storage
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear()
+      }
+      // Use replace to prevent back navigation to protected pages
+      router.replace('/login')
     }
   }
 
