@@ -54,7 +54,7 @@ Password: t#Au2XnAWhv8
 
 🚀 Tech Stack
 
-Frontend: Next.js / React
+Frontend: Next.js / React,Django
 
 Backend: API-based architecture
 
@@ -74,22 +74,4 @@ Clean UI & scalable architecture
 
 Ideal for portfolio showcase, learning purposes, or future SaaS expansion.
 
-🛠️ Installation (Optional)
-git clone https://github.com/your-username/e-school-app.git
-cd e-school-app
-npm install
-npm run dev
 
-📄 License
-
-This project is for educational and demonstration purposes.
-
-If you want, I can also:
-
-Add screenshots section
-
-Write a Fiverr / portfolio-ready README
-
-Optimize it for open-source contribution
-
-Add API documentation section
