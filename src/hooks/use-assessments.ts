@@ -3,14 +3,14 @@ import { api, endpoints } from '@/lib/api'
 
 // Types
 export interface Assessment {
-  id: number
+  id: number | string
   title: string
   description?: string
-  subject: number
+  subject: number | string
   subject_name: string
-  class_room: number
+  class_room: number | string
   class_name: string
-  teacher: number
+  teacher: number | string
   teacher_name: string
   assessment_type: 'quiz' | 'assignment' | 'exam' | 'project' | 'homework'
   total_marks: number
@@ -42,8 +42,8 @@ export interface AssessmentSubmission {
 export interface CreateAssessmentData {
   title: string
   description?: string
-  subject: number
-  class_room: number
+  subject: number | string
+  class_room: number | string
   assessment_type: 'quiz' | 'assignment' | 'exam' | 'project' | 'homework'
   total_marks: number
   passing_marks: number
@@ -74,9 +74,9 @@ export interface AssessmentStatistics {
 
 // Hooks
 export function useAssessments(filters?: {
-  subject?: number
-  class_room?: number
-  teacher?: number
+  subject?: number | string
+  class_room?: number | string
+  teacher?: number | string
   assessment_type?: string
   is_published?: boolean
 }) {
@@ -131,7 +131,7 @@ export function useUpdateAssessment() {
   return useApiMutation<Assessment, UpdateAssessmentData>(
     (data) => api.put(`${endpoints.assessments}${data.id}/`, data),
     {
-      invalidateQueries: [['assessments'], ['assessment', data.id.toString()]],
+      invalidateQueries: [['assessments'], ['assessment']],
       onSuccess: () => {
         console.log('Assessment updated successfully')
       },
@@ -201,9 +201,9 @@ export function useBulkGradeSubmissions() {
 
 // Assessment Statistics
 export function useAssessmentStatistics(filters?: {
-  subject?: number
-  class_room?: number
-  teacher?: number
+  subject?: number | string
+  class_room?: number | string
+  teacher?: number | string
   date_range?: { start: string; end: string }
 }) {
   const queryParams = new URLSearchParams()

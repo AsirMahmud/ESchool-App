@@ -46,12 +46,12 @@ import { StudentDetails } from '@/components/student-details'
 import { StudentAttendance } from '@/components/student-attendance'
 
 // Subject Detail View Component
-function SubjectDetailView({ 
-  subject, 
-  students, 
-  studentsLoading, 
-  onClose, 
-  onMarkAttendance, 
+function SubjectDetailView({
+  subject,
+  students,
+  studentsLoading,
+  onClose,
+  onMarkAttendance,
   onEnterGrades,
   activeTab,
   onTabChange,
@@ -94,8 +94,8 @@ function SubjectDetailView({
   )
   const displayStudents = selectedExam?.section ? (examSectionStudents || []) : students
   const displayStudentsLoading = selectedExam?.section ? !!examStudentsLoading : studentsLoading
-  
-  const filteredStudents = displayStudents.filter(student => 
+
+  const filteredStudents = displayStudents.filter(student =>
     student.name.toLowerCase().includes(searchStudents.toLowerCase()) ||
     student.student_number.toLowerCase().includes(searchStudents.toLowerCase())
   )
@@ -148,9 +148,9 @@ function SubjectDetailView({
   const handleSaveExamResults = async () => {
     if (!selectedExamId || !selectedExam) return
     const existingByStudent: Record<string, any> = {}
-    ;(examResults || []).forEach((res: any) => {
-      existingByStudent[String(res.student)] = res
-    })
+      ; (examResults || []).forEach((res: any) => {
+        existingByStudent[String(res.student)] = res
+      })
 
     const ops = filteredStudents.map(async (s) => {
       const key = String(s.s_id)
@@ -189,7 +189,7 @@ function SubjectDetailView({
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <Tabs value={activeTab} onValueChange={onTabChange}>
           <TabsList className="grid w-full grid-cols-4">
@@ -198,7 +198,7 @@ function SubjectDetailView({
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="grades">Grades</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-6 mt-6">
             <div className="grid gap-6 md:grid-cols-2">
               {/* Subject Info */}
@@ -225,7 +225,7 @@ function SubjectDetailView({
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Class Statistics */}
               <Card>
                 <CardHeader>
@@ -243,7 +243,7 @@ function SubjectDetailView({
                   <div className="flex justify-between">
                     <span className="text-gray-600">Average Age:</span>
                     <span className="font-medium">
-                      {students.length > 0 
+                      {students.length > 0
                         ? Math.round(students.reduce((sum, s) => sum + (s.age || 0), 0) / students.length)
                         : 0} years
                     </span>
@@ -251,7 +251,7 @@ function SubjectDetailView({
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
@@ -285,7 +285,7 @@ function SubjectDetailView({
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="students" className="space-y-6 mt-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
@@ -304,7 +304,7 @@ function SubjectDetailView({
                 Add Student
               </Button>
             </div>
-            
+
             {displayStudentsLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -423,16 +423,16 @@ function SubjectDetailView({
               </DialogContent>
             </Dialog>
           </TabsContent>
-          
+
           <TabsContent value="attendance" className="space-y-6 mt-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <Label htmlFor="attendance-date">Date</Label>
-                <Input
+                <input
                   id="attendance-date"
                   type="date"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1"
                   value={selectedDate}
-                  className="mt-1"
                   onChange={(e) => onDateChange(e.target.value)}
                 />
               </div>
@@ -515,7 +515,7 @@ function SubjectDetailView({
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="grades" className="space-y-6 mt-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
@@ -544,7 +544,7 @@ function SubjectDetailView({
                 </Button>
               </div>
             </div>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Grade Entry</CardTitle>
@@ -616,7 +616,7 @@ function SubjectDetailView({
 export default function TeacherSubjectsPage() {
   const { data: teacher, isLoading: teacherLoading } = useCurrentTeacher()
   const { data: allSubjects, isLoading: allSubjectsLoading } = useSubjects()
-  
+
   // State management
   const [selectedSubject, setSelectedSubject] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('overview')
@@ -624,12 +624,12 @@ export default function TeacherSubjectsPage() {
   const [gradeDialog, setGradeDialog] = useState(false)
   const [attendanceDialog, setAttendanceDialog] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  
+
   // Get students for selected subject's section
   const { data: sectionStudents, isLoading: studentsLoading } = useStudentsWithParentsBySection(
     selectedSubject?.section_id
   )
-  
+
   // Get attendance data for selected subject
   const { data: attendanceData } = useClassAttendance({
     date: selectedDate,
@@ -652,9 +652,9 @@ export default function TeacherSubjectsPage() {
   const teacherSubjects = teacher?.current_subjects || []
   const activeSubjects = teacherSubjects.filter(subject => subject.is_active) || []
   const inactiveSubjects = teacherSubjects.filter(subject => !subject.is_active) || []
-  
+
   // Filter subjects based on search
-  const filteredActiveSubjects = activeSubjects.filter(subject => 
+  const filteredActiveSubjects = activeSubjects.filter(subject =>
     subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (subject.section_name && subject.section_name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -721,7 +721,7 @@ export default function TeacherSubjectsPage() {
 
       {selectedSubject ? (
         /* Subject Detail View */
-        <SubjectDetailView 
+        <SubjectDetailView
           subject={selectedSubject}
           students={sectionStudents || []}
           studentsLoading={studentsLoading}
@@ -742,206 +742,206 @@ export default function TeacherSubjectsPage() {
             <TabsTrigger value="inactive">Previous Subjects ({inactiveSubjects.length})</TabsTrigger>
           </TabsList>
 
-        <TabsContent value="active" className="space-y-6">
-          {filteredActiveSubjects.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {searchTerm ? 'No Subjects Found' : 'No Active Subjects'}
-                </h3>
-                <p className="text-gray-500 text-center max-w-md">
-                  {searchTerm 
-                    ? `No subjects match "${searchTerm}". Try adjusting your search.`
-                    : "You don't have any active subjects assigned yet. Contact your administrator to get subjects assigned."
-                  }
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredActiveSubjects.map((subject) => {
-                // Find the full subject details
-                const subjectDetails = allSubjects?.find(s => s.s_code === subject.subject_code)
-                
-                return (
-                  <Card key={subject.id} className="hover:shadow-md transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <BookOpen className="h-5 w-5 text-blue-600" />
-                            {subject.subject_name}
-                          </CardTitle>
-                          <CardDescription className="mt-1">
-                            Code: {subject.subject_code}
-                            {subject.section_name && (
-                              <span className="block text-blue-600">Section: {subject.section_name}</span>
-                            )}
-                          </CardDescription>
-                        </div>
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
-                          Active
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      {/* Subject Details */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Type:</span>
-                          <span className="font-medium">{subjectDetails?.subject_type || 'Not specified'}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Difficulty:</span>
-                          <span className="font-medium">{subjectDetails?.difficulty_level || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Started:</span>
-                          <span className="font-medium">
-                            {new Date(subject.start_date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+          <TabsContent value="active" className="space-y-6">
+            {filteredActiveSubjects.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {searchTerm ? 'No Subjects Found' : 'No Active Subjects'}
+                  </h3>
+                  <p className="text-gray-500 text-center max-w-md">
+                    {searchTerm
+                      ? `No subjects match "${searchTerm}". Try adjusting your search.`
+                      : "You don't have any active subjects assigned yet. Contact your administrator to get subjects assigned."
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredActiveSubjects.map((subject) => {
+                  // Find the full subject details
+                  const subjectDetails = allSubjects?.find(s => s.s_code === subject.subject_code)
 
-                      {/* Subject Description */}
-                      {subjectDetails?.description && (
-                        <div className="pt-2 border-t">
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {subjectDetails.description}
-                          </p>
+                  return (
+                    <Card key={subject.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <BookOpen className="h-5 w-5 text-blue-600" />
+                              {subject.subject_name}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              Code: {subject.subject_code}
+                              {subject.section_name && (
+                                <span className="block text-blue-600">Section: {subject.section_name}</span>
+                              )}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            Active
+                          </Badge>
                         </div>
-                      )}
+                      </CardHeader>
 
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-2 gap-2 pt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="justify-start"
-                          onClick={() => {
-                            handleSubjectSelect(subject)
-                            setTimeout(() => setActiveTab('students'), 100)
-                          }}
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Students
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="justify-start"
-                          onClick={() => {
-                            handleSubjectSelect(subject)
-                            setTimeout(() => setActiveTab('grades'), 100)
-                          }}
-                        >
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          Grades
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="justify-start"
-                          onClick={() => {
-                            handleSubjectSelect(subject)
-                            setTimeout(() => setActiveTab('attendance'), 100)
-                          }}
-                        >
-                          <ClipboardCheck className="h-4 w-4 mr-2" />
-                          Attendance
-                        </Button>
-                        <Link href={`/teacher/diary?subject=${encodeURIComponent(subject.subject_code)}&section=${encodeURIComponent(subject.section_id || '')}`}>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full justify-start"
+                      <CardContent className="space-y-4">
+                        {/* Subject Details */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Type:</span>
+                            <span className="font-medium">{subjectDetails?.subject_type || 'Not specified'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Difficulty:</span>
+                            <span className="font-medium">{subjectDetails?.difficulty_level || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Started:</span>
+                            <span className="font-medium">
+                              {new Date(subject.start_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Subject Description */}
+                        {subjectDetails?.description && (
+                          <div className="pt-2 border-t">
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {subjectDetails.description}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="justify-start"
+                            onClick={() => {
+                              handleSubjectSelect(subject)
+                              setTimeout(() => setActiveTab('students'), 100)
+                            }}
                           >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Diary
+                            <Users className="h-4 w-4 mr-2" />
+                            Students
                           </Button>
-                        </Link>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="justify-start"
-                          onClick={() => handleSubjectSelect(subject)}
-                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="justify-start"
+                            onClick={() => {
+                              handleSubjectSelect(subject)
+                              setTimeout(() => setActiveTab('grades'), 100)
+                            }}
+                          >
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Grades
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="justify-start"
+                            onClick={() => {
+                              handleSubjectSelect(subject)
+                              setTimeout(() => setActiveTab('attendance'), 100)
+                            }}
+                          >
+                            <ClipboardCheck className="h-4 w-4 mr-2" />
+                            Attendance
+                          </Button>
+                          <Link href={`/teacher/diary?subject=${encodeURIComponent(subject.subject_code)}&section=${encodeURIComponent(subject.section_id || '')}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full justify-start"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Diary
+                            </Button>
+                          </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="justify-start"
+                            onClick={() => handleSubjectSelect(subject)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Details
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="inactive" className="space-y-6">
+            {inactiveSubjects.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Previous Subjects</h3>
+                  <p className="text-gray-500 text-center max-w-md">
+                    You haven't taught any subjects previously or they haven't been archived yet.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {inactiveSubjects.map((subject) => {
+                  const subjectDetails = allSubjects?.find(s => s.s_code === subject.subject_code)
+
+                  return (
+                    <Card key={subject.id} className="opacity-75">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <BookOpen className="h-5 w-5 text-gray-500" />
+                              {subject.subject_name}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              Code: {subject.subject_code}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="secondary">
+                            Inactive
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Period:</span>
+                            <span className="font-medium">
+                              {new Date(subject.start_date).toLocaleDateString()} - {' '}
+                              {subject.end_date ? new Date(subject.end_date).toLocaleDateString() : 'Ongoing'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Type:</span>
+                            <span className="font-medium">{subjectDetails?.subject_type || 'Not specified'}</span>
+                          </div>
+                        </div>
+
+                        <Button variant="outline" className="w-full" size="sm" disabled>
                           <Eye className="h-4 w-4 mr-2" />
-                          Details
+                          View Archive
                         </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="inactive" className="space-y-6">
-          {inactiveSubjects.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No Previous Subjects</h3>
-                <p className="text-gray-500 text-center max-w-md">
-                  You haven't taught any subjects previously or they haven't been archived yet.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {inactiveSubjects.map((subject) => {
-                const subjectDetails = allSubjects?.find(s => s.s_code === subject.subject_code)
-                
-                return (
-                  <Card key={subject.id} className="opacity-75">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <BookOpen className="h-5 w-5 text-gray-500" />
-                            {subject.subject_name}
-                          </CardTitle>
-                          <CardDescription className="mt-1">
-                            Code: {subject.subject_code}
-                          </CardDescription>
-                        </div>
-                        <Badge variant="secondary">
-                          Inactive
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Period:</span>
-                          <span className="font-medium">
-                            {new Date(subject.start_date).toLocaleDateString()} - {' '}
-                            {subject.end_date ? new Date(subject.end_date).toLocaleDateString() : 'Ongoing'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Type:</span>
-                          <span className="font-medium">{subjectDetails?.subject_type || 'Not specified'}</span>
-                        </div>
-                      </div>
-
-                      <Button variant="outline" className="w-full" size="sm" disabled>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Archive
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Summary Stats */}

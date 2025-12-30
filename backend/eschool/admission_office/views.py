@@ -165,7 +165,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     queryset = Attendance.objects.all()
     serializer_class = AttendanceSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['student', 'subject', 'status', 'date']
+    filterset_fields = ['student', 'subject', 'status', 'date', 'student__section']
     search_fields = ['student__name', 'student__student_number', 'subject__s_name']
     ordering_fields = ['date', 'check_in_time']
     ordering = ['-date']
@@ -308,13 +308,18 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        # Get teacher from current user if possible
+        teacher = None
+        if request.user.is_authenticated and hasattr(request.user, 'employee'):
+            teacher = request.user.employee
+
         created_records = []
         errors = []
         
         for record_data in attendance_records:
             try:
-                # Create attendance record
-                attendance_data = {
+                # Prepare attendance record data
+                attendance_payload = {
                     'student': record_data.get('student'),
                     'date': attendance_date,
                     'status': record_data.get('status', 'present'),
@@ -323,53 +328,31 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                     'notes': record_data.get('notes', ''),
                     'subject': subject,
                     'class_period': class_period,
+                    'teacher': teacher.emp_id if teacher else None,
                 }
                 
                 # Check if record already exists
                 existing = Attendance.objects.filter(
-                    student_id=attendance_data['student'],
-                    date=attendance_data['date'],
+                    student_id=attendance_payload['student'],
+                    date=attendance_payload['date'],
                     subject_id=subject if subject else None
                 ).first()
                 
                 if existing:
-                    # Update existing record
-                    for key, value in attendance_data.items():
-                        if value is None:
-                            continue
-                        # Do not reassign student relation using instance; use _id or skip
-                        if key == 'student':
-                            # existing student should not change; ensure correct type if provided
-                            try:
-                                existing.student_id = value
-                            except Exception:
-                                # fallback: skip updating student if assignment fails
-                                pass
-                            continue
-                        # Handle subject foreign key via subject_id (subject code is PK)
-                        if key == 'subject':
-                            existing.subject_id = value
-                            continue
-                        setattr(existing, key, value)
-                    existing.save()
-                    serializer = AttendanceSerializer(existing)
+                    # Update existing record using serializer
+                    serializer = AttendanceSerializer(existing, data=attendance_payload, partial=True)
+                else:
+                    # Create new record using serializer
+                    serializer = AttendanceSerializer(data=attendance_payload)
+                
+                if serializer.is_valid():
+                    serializer.save()
                     created_records.append(serializer.data)
                 else:
-                    # Create new record. Ensure we pass *_id for FKs
-                    create_payload = attendance_data.copy()
-                    create_payload['student'] = attendance_data['student']
-                    # Subject is optional; pass through when provided
-                    if 'subject' in create_payload:
-                        create_payload['subject'] = attendance_data['subject']
-                    serializer = AttendanceSerializer(data=create_payload)
-                    if serializer.is_valid():
-                        serializer.save()
-                        created_records.append(serializer.data)
-                    else:
-                        errors.append({
-                            'student': record_data.get('student'),
-                            'errors': serializer.errors
-                        })
+                    errors.append({
+                        'student': record_data.get('student'),
+                        'errors': serializer.errors
+                    })
                         
             except Exception as e:
                 errors.append({

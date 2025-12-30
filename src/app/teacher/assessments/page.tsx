@@ -68,7 +68,7 @@ import {
   useAssessmentStatistics,
   useUpcomingAssessments,
 } from "@/hooks/use-assessments";
-import { useTeacherClasses } from "@/hooks/use-teachers";
+import { useTeacherClasses, useCurrentTeacher } from "@/hooks/use-teachers";
 import { useSubjects } from "@/hooks/use-subjects";
 
 export default function TeacherAssessmentsPage() {
@@ -95,27 +95,28 @@ export default function TeacherAssessmentsPage() {
     is_published: false,
   });
 
-  const { data: classes } = useTeacherClasses(1); // Replace with actual teacher ID
+  const { data: teacher, isLoading: teacherLoading } = useCurrentTeacher();
+  const { data: classes } = useTeacherClasses(teacher?.teacher_id);
   const { data: subjects } = useSubjects();
-  
+
   const { data: assessments, isLoading } = useAssessments({
-    class_room: selectedClass ? parseInt(selectedClass) : undefined,
-    subject: selectedSubject ? parseInt(selectedSubject) : undefined,
+    class_room: selectedClass || undefined,
+    subject: selectedSubject || undefined,
     assessment_type: assessmentType || undefined,
   });
 
   const { data: statistics } = useAssessmentStatistics({
-    class_room: selectedClass ? parseInt(selectedClass) : undefined,
-    subject: selectedSubject ? parseInt(selectedSubject) : undefined,
+    class_room: selectedClass || undefined,
+    subject: selectedSubject || undefined,
   });
 
-  const { data: upcomingAssessments } = useUpcomingAssessments(1, 7); // Next 7 days
+  const { data: upcomingAssessments } = useUpcomingAssessments(teacher?.teacher_id as any, 7); // Next 7 days
 
   const createAssessmentMutation = useCreateAssessment();
   const deleteAssessmentMutation = useDeleteAssessment();
 
   const handleCreateAssessment = () => {
-    createAssessmentMutation.mutate(assessmentForm, {
+    createAssessmentMutation.mutate(assessmentForm as any, {
       onSuccess: () => {
         setIsCreateDialogOpen(false);
         setAssessmentForm({
@@ -136,9 +137,9 @@ export default function TeacherAssessmentsPage() {
     });
   };
 
-  const handleDeleteAssessment = (id: number) => {
+  const handleDeleteAssessment = (id: number | string) => {
     if (confirm('Are you sure you want to delete this assessment?')) {
-      deleteAssessmentMutation.mutate(id);
+      deleteAssessmentMutation.mutate(id as any);
     }
   };
 
@@ -156,19 +157,19 @@ export default function TeacherAssessmentsPage() {
   const getStatusBadge = (assessment: any) => {
     const now = new Date();
     const dueDate = new Date(assessment.due_date);
-    
+
     if (!assessment.is_published) {
       return <Badge variant="outline">Draft</Badge>;
     }
-    
+
     if (isAfter(now, dueDate)) {
       return <Badge variant="destructive">Overdue</Badge>;
     }
-    
+
     if (isBefore(now, dueDate) && isAfter(now, addDays(dueDate, -1))) {
       return <Badge variant="default">Due Soon</Badge>;
     }
-    
+
     return <Badge variant="secondary">Active</Badge>;
   };
 
@@ -254,7 +255,7 @@ export default function TeacherAssessmentsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {subjects?.map((subject) => (
-                          <SelectItem key={subject.id} value={subject.id.toString()}>
+                          <SelectItem key={subject.s_code} value={subject.s_code}>
                             {subject.s_name}
                           </SelectItem>
                         ))}
@@ -317,18 +318,20 @@ export default function TeacherAssessmentsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="start_date">Start Date</Label>
-                    <Input
+                    <input
                       id="start_date"
                       type="datetime-local"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={assessmentForm.start_date}
                       onChange={(e) => setAssessmentForm({ ...assessmentForm, start_date: e.target.value })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="due_date">Due Date</Label>
-                    <Input
+                    <input
                       id="due_date"
                       type="datetime-local"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={assessmentForm.due_date}
                       onChange={(e) => setAssessmentForm({ ...assessmentForm, due_date: e.target.value })}
                     />

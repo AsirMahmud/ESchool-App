@@ -35,7 +35,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 import { useLogout } from '@/hooks/use-auth'
 
 const navigation = [
-
+  { name: 'Dashboard', href: '/teacher/dashboard', icon: BookOpen },
   { name: 'My Subjects', href: '/teacher/subjects', icon: BookOpen },
 
  

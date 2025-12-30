@@ -59,11 +59,11 @@ export default function TeacherExamsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedExam, setSelectedExam] = useState<any>(null)
   const [examResults, setExamResults] = useState<Record<string, { marks: string; grade: string; remarks: string }>>({})
-  
+
   const toast = (options: { title: string; description: string; variant?: string }) => {
     alert(`${options.title}: ${options.description}`)
   }
-  
+
   const { data: teacher } = useCurrentTeacher()
   const teacherId = teacher?.teacher_id
   const { data: exams, isLoading: examsLoading } = useExams()
@@ -71,7 +71,7 @@ export default function TeacherExamsPage() {
   const createExamMutation = useCreateExam()
 
   // Filter exams for teacher's subjects
-  const teacherExams = exams?.filter(exam => 
+  const teacherExams = exams?.filter(exam =>
     teacher?.current_subjects?.some(subject => subject.subject_code === exam.subject_code)
   ) || []
 
@@ -120,7 +120,7 @@ export default function TeacherExamsPage() {
   const getStatusBadge = (exam: any) => {
     const examDate = new Date(exam.exam_date)
     const now = new Date()
-    
+
     if (examDate > now) {
       return <Badge variant="outline" className="bg-blue-50 text-blue-700">Upcoming</Badge>
     } else if (exam.status === 'completed') {
@@ -169,8 +169,8 @@ export default function TeacherExamsPage() {
                   Create a new exam for your students
                 </DialogDescription>
               </DialogHeader>
-              <CreateExamForm 
-                teacher={teacher} 
+              <CreateExamForm
+                teacher={teacher}
                 onSubmit={handleCreateExam}
                 isLoading={createExamMutation.isPending}
               />
@@ -272,7 +272,7 @@ export default function TeacherExamsPage() {
                       {getStatusBadge(exam)}
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center gap-2">
@@ -419,7 +419,7 @@ export default function TeacherExamsPage() {
                           const result = examResults[studentId] || { marks: '', grade: '', remarks: '' }
                           const marks = parseInt(result.marks) || 0
                           const calculatedGrade = marks > 0 ? calculateGrade(marks, selectedExam.total_marks) : ''
-                          
+
                           return (
                             <TableRow key={studentId}>
                               <TableCell>
@@ -483,32 +483,69 @@ export default function TeacherExamsPage() {
 
 // Create Exam Form Component
 function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
+  const currentYear = new Date().getFullYear().toString()
   const [formData, setFormData] = useState({
     exam_name: '',
     exam_type: 'midterm',
     subject: '',
     level: '',
-    duration: '',
-    total_marks: '',
-    passing_marks: '',
-    exam_date: '',
-    start_time: '',
-    end_time: '',
+    section: '',
+    academic_year: currentYear,
+    duration: '01:30:00',
+    total_marks: '100',
+    passing_marks: '40',
+    exam_date: new Date().toISOString().split('T')[0],
+    start_time: '09:00',
+    end_time: '10:30',
     instructions: ''
   })
 
+  // Auto-populate level and section based on subject
+  const handleSubjectChange = (subjectCode: string) => {
+    const subjectInfo = teacher?.current_subjects?.find((s: any) => s.subject_code === subjectCode)
+    if (subjectInfo) {
+      setFormData(prev => ({
+        ...prev,
+        subject: subjectCode,
+        level: subjectInfo.level_id || '',
+        section: subjectInfo.section_id || ''
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, subject: subjectCode }))
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+
+    // Ensure duration is in HH:MM:SS format
+    let finalDuration = formData.duration
+    if (finalDuration && !finalDuration.includes(':')) {
+      // If it's just a number, assume minutes
+      const mins = parseInt(finalDuration)
+      const h = Math.floor(mins / 60).toString().padStart(2, '0')
+      const m = (mins % 60).toString().padStart(2, '0')
+      finalDuration = `${h}:${m}:00`
+    } else if (finalDuration && finalDuration.split(':').length === 2) {
+      finalDuration = `${finalDuration}:00`
+    }
+
+    onSubmit({
+      ...formData,
+      duration: finalDuration
+    })
   }
+
+  const inputClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="exam_name">Exam Name</Label>
-          <Input
+          <input
             id="exam_name"
+            className={inputClasses}
             value={formData.exam_name}
             onChange={(e) => setFormData(prev => ({ ...prev, exam_name: e.target.value }))}
             placeholder="Midterm Examination"
@@ -535,27 +572,52 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
-          <Select value={formData.subject} onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}>
+          <Select value={formData.subject} onValueChange={handleSubjectChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select subject" />
             </SelectTrigger>
             <SelectContent>
               {teacher?.current_subjects?.map((subject: any) => (
                 <SelectItem key={subject.id} value={subject.subject_code}>
-                  {subject.subject_name}
+                  {subject.subject_name} ({subject.section_name})
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes)</Label>
-          <Input
-            id="duration"
-            type="number"
-            value={formData.duration}
-            onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-            placeholder="90"
+          <Label htmlFor="academic_year">Academic Year</Label>
+          <input
+            id="academic_year"
+            className={inputClasses}
+            value={formData.academic_year}
+            onChange={(e) => setFormData(prev => ({ ...prev, academic_year: e.target.value }))}
+            placeholder="2025"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="level">Level (Auto-filled)</Label>
+          <input
+            id="level"
+            className={inputClasses + " bg-gray-50"}
+            value={formData.level}
+            readOnly
+            placeholder="Auto-filled from subject"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="section">Section (Auto-filled)</Label>
+          <input
+            id="section"
+            className={inputClasses + " bg-gray-50"}
+            value={formData.section}
+            readOnly
+            placeholder="Auto-filled from subject"
             required
           />
         </div>
@@ -564,9 +626,10 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="total_marks">Total Marks</Label>
-          <Input
+          <input
             id="total_marks"
             type="number"
+            className={inputClasses}
             value={formData.total_marks}
             onChange={(e) => setFormData(prev => ({ ...prev, total_marks: e.target.value }))}
             placeholder="100"
@@ -575,9 +638,10 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="passing_marks">Passing Marks</Label>
-          <Input
+          <input
             id="passing_marks"
             type="number"
+            className={inputClasses}
             value={formData.passing_marks}
             onChange={(e) => setFormData(prev => ({ ...prev, passing_marks: e.target.value }))}
             placeholder="40"
@@ -586,22 +650,38 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="duration">Duration (HH:MM:SS or minutes)</Label>
+          <input
+            id="duration"
+            className={inputClasses}
+            value={formData.duration}
+            onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+            placeholder="01:30:00"
+            required
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="exam_date">Exam Date</Label>
-          <Input
+          <input
             id="exam_date"
             type="date"
+            className={inputClasses}
             value={formData.exam_date}
             onChange={(e) => setFormData(prev => ({ ...prev, exam_date: e.target.value }))}
             required
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="start_time">Start Time</Label>
-          <Input
+          <input
             id="start_time"
             type="time"
+            className={inputClasses}
             value={formData.start_time}
             onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
             required
@@ -609,9 +689,10 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="end_time">End Time</Label>
-          <Input
+          <input
             id="end_time"
             type="time"
+            className={inputClasses}
             value={formData.end_time}
             onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
             required
@@ -631,7 +712,7 @@ function CreateExamForm({ teacher, onSubmit, isLoading }: any) {
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto mt-4">
           {isLoading ? 'Creating...' : 'Create Exam'}
         </Button>
       </DialogFooter>

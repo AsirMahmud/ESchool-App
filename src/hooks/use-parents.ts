@@ -12,16 +12,16 @@ export interface Parent {
   date_of_birth?: string | null
   age?: number | null
   occupation:
-    | 'employed'
-    | 'self_employed'
-    | 'business'
-    | 'professional'
-    | 'government'
-    | 'private'
-    | 'unemployed'
-    | 'retired'
-    | 'student'
-    | 'other'
+  | 'employed'
+  | 'self_employed'
+  | 'business'
+  | 'professional'
+  | 'government'
+  | 'private'
+  | 'unemployed'
+  | 'retired'
+  | 'student'
+  | 'other'
   job_title?: string | null
   workplace?: string | null
   address: string
@@ -75,7 +75,7 @@ export function useParents(search?: string) {
 
 export function useParent(id: number | string) {
   return useApiQuery<Parent>(
-    ['parent', id.toString()],
+    ['parent', id?.toString() || ''],
     () => api.get(endpoints.parent(id)),
     { enabled: !!id, staleTime: 1000 * 60 * 5 }
   )
@@ -112,7 +112,7 @@ export interface ParentChild {
 
 export function useParentChildren(parentId: number | string) {
   return useApiQuery<ParentChild[]>(
-    ['parent', parentId.toString(), 'children'],
+    ['parent', parentId?.toString() || '', 'children'],
     () => api.get(`${endpoints.parent(parentId)}children/`),
     { enabled: !!parentId, staleTime: 1000 * 60 * 5 }
   )
@@ -129,7 +129,7 @@ export interface ParentPayment {
 
 export function useParentPayments(parentId: number | string) {
   return useApiQuery<ParentPayment[]>(
-    ['parent', parentId.toString(), 'payments'],
+    ['parent', parentId?.toString() || '', 'payments'],
     () => api.get(`${endpoints.parent(parentId)}payments/`),
     { enabled: !!parentId, staleTime: 1000 * 60 * 5 }
   )

@@ -103,32 +103,53 @@ class TeacherDetailSerializer(TeacherSerializer):
         ]
     
     def get_current_subjects(self, obj):
-        """Get current subjects taught by teacher from section assignments"""
+        """Get current subjects taught by teacher from both direct and section assignments"""
         from level.models import SectionSubject
         
-        # Get section subjects for this teacher
-        section_subjects = SectionSubject.objects.filter(teacher=obj, is_active=True)
-        
-        # Convert to the expected format
         subjects_data = []
+        
+        # 1. Get from hierarchical assignments
+        section_subjects = SectionSubject.objects.filter(teacher=obj, is_active=True).select_related('subject', 'section', 'section__level')
         for ss in section_subjects:
             subjects_data.append({
-                'id': ss.id,
+                'id': f"ss-{ss.id}",
                 'subject': ss.subject.s_code,
                 'subject_name': ss.subject.s_name,
                 'subject_code': ss.subject.s_code,
                 'is_active': ss.is_active,
                 'start_date': ss.created_at.date(),
-                'end_date': None,
                 'section_name': ss.section.section_name,
-                'section_id': ss.section.id
+                'section_id': ss.section.id,
+                'level_id': ss.section.level.id,
+                'level_name': ss.section.level.level_name,
             })
+            
+        # 2. Add direct subjects that aren't already included
+        assigned_codes = {s['subject_code'] for s in subjects_data}
+        direct_subjects = obj.subjects_taught.filter(is_active=True).select_related('subject')
+        for ts in direct_subjects:
+            if ts.subject.s_code not in assigned_codes:
+                subjects_data.append({
+                    'id': f"ts-{ts.id}",
+                    'subject': ts.subject.s_code,
+                    'subject_name': ts.subject.s_name,
+                    'subject_code': ts.subject.s_code,
+                    'is_active': ts.is_active,
+                    'start_date': getattr(ts, 'start_date', None),
+                    'section_name': 'Direct',
+                    'section_id': None,
+                    'level_id': None,
+                    'level_name': None,
+                })
         
         return subjects_data
     
     def get_current_classes(self, obj):
         """Get current classes taught by teacher"""
-        return TeacherClassSerializer(obj.current_classes, many=True).data
+        try:
+            return TeacherClassSerializer(obj.current_classes, many=True).data
+        except Exception:
+            return []
 
 
 class TeacherListSerializer(serializers.ModelSerializer):

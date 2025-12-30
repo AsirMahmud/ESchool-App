@@ -111,10 +111,10 @@ export function useExams(filters?: {
       if (filters?.status) params.append('status', filters.status)
       if (filters?.academic_year) params.append('academic_year', filters.academic_year)
       if (filters?.search) params.append('search', filters.search)
-      
+
       const queryString = params.toString()
       const endpoint = queryString ? `${endpoints.exams}?${queryString}` : endpoints.exams
-      
+
       const data: any = await api.get(endpoint)
       if (Array.isArray(data)) return data as Exam[]
       if (data && Array.isArray(data.results)) return data.results as Exam[]
@@ -136,7 +136,23 @@ export function useExam(id: number | string) {
 
 export function useCreateExam() {
   return useApiMutation<Exam, CreateExamData>(
-    (data) => api.post(endpoints.exams, data),
+    (data) => {
+      // Ensure time and duration formats are correct
+      const formattedData = {
+        ...data,
+        start_time: data.start_time && data.start_time.length === 5
+          ? `${data.start_time}:00`
+          : data.start_time,
+        end_time: data.end_time && data.end_time.length === 5
+          ? `${data.end_time}:00`
+          : data.end_time,
+        // Duration is expected as HH:MM:SS
+        duration: data.duration && data.duration.split(':').length === 2
+          ? `${data.duration}:00`
+          : data.duration
+      }
+      return api.post(endpoints.exams, formattedData)
+    },
     { invalidateQueries: [['exams']] }
   )
 }

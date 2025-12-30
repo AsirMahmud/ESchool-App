@@ -15,7 +15,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Award, Calendar, Clock, BookOpen } from 'lucide-react'
+import { format } from 'date-fns'
+import { DatePicker } from '@/components/ui/date-picker'
+import { ArrowLeft, Award, Calendar, Clock, BookOpen, CalendarIcon } from 'lucide-react'
 
 const schema = z.object({
   exam_name: z.string().min(2, 'Exam name must be at least 2 characters'),
@@ -23,7 +25,7 @@ const schema = z.object({
   subject: z.string().min(1, 'Please select a subject'),
   level: z.number().min(1, 'Please select a level'),
   section: z.number().optional(),
-  duration: z.string().min(1, 'Duration is required').regex(/^\d{1,2}:\d{2}:\d{2}$/, 'Duration must be in HH:MM:SS format'),
+  duration: z.string().min(1, 'Duration is required'),
   total_marks: z.number().min(1, 'Total marks must be at least 1'),
   passing_marks: z.number().min(0, 'Passing marks cannot be negative'),
   exam_date: z.string().min(1, 'Exam date is required'),
@@ -85,7 +87,7 @@ export default function AddExamPage() {
 
   const onSubmit = async (values: FormValues) => {
     console.log('Form values:', values) // Debug log
-    
+
     const payload: CreateExamData = {
       exam_name: values.exam_name,
       exam_type: values.exam_type,
@@ -118,7 +120,7 @@ export default function AddExamPage() {
   }
 
   // Filter sections based on selected level
-  const availableSections = sections?.filter(section => 
+  const availableSections = sections?.filter(section =>
     selectedLevel ? section.level === selectedLevel : true
   ) || []
 
@@ -244,7 +246,7 @@ export default function AddExamPage() {
                       <SelectContent>
                         <SelectItem value="0">All Sections</SelectItem>
                         {availableSections.map((s) => (
-                          <SelectItem key={s.section_id} value={String(s.section_id)}>
+                          <SelectItem key={s.id} value={String(s.id)}>
                             {s.section_name}
                           </SelectItem>
                         ))}
@@ -258,20 +260,15 @@ export default function AddExamPage() {
                   <FormItem>
                     <FormLabel>Duration (HH:MM:SS)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="01:30:00" 
-                        {...field} 
-                        onChange={(e) => {
-                          // Validate and format duration input
-                          const value = e.target.value
-                          // Allow only HH:MM:SS format
-                          if (/^\d{1,2}:\d{2}:\d{2}$/.test(value) || value === '') {
-                            field.onChange(value)
-                          }
-                        }}
+                      <input
+                        type="text"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="e.g. 02:00:00"
+                        {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
+                    <p className="text-[0.8rem] text-muted-foreground">Format: HH:MM:SS</p>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -282,7 +279,14 @@ export default function AddExamPage() {
                   <FormItem>
                     <FormLabel>Total Marks</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                      <input
+                        type="number"
+                        min="1"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -292,7 +296,14 @@ export default function AddExamPage() {
                   <FormItem>
                     <FormLabel>Passing Marks</FormLabel>
                     <FormControl>
-                      <Input type="number" min="0" {...field} onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                      <input
+                        type="number"
+                        min="0"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -322,31 +333,12 @@ export default function AddExamPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField name="exam_date" control={form.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Exam Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField name="start_time" control={form.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField name="end_time" control={form.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time</FormLabel>
-                    <FormControl>
-                      <Input type="time" {...field} />
-                    </FormControl>
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="mb-2">Exam Date</FormLabel>
+                    <DatePicker
+                      date={field.value ? new Date(field.value) : undefined}
+                      onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                    />
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -356,6 +348,36 @@ export default function AddExamPage() {
                     <FormLabel>Academic Year</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 2024" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField name="start_time" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <FormControl>
+                      <input
+                        type="time"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField name="end_time" control={form.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time</FormLabel>
+                    <FormControl>
+                      <input
+                        type="time"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        value={field.value || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -376,8 +398,8 @@ export default function AddExamPage() {
                 <Button variant="outline" type="button" onClick={() => router.push('/admin/exams')}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createExam.isLoading}>
-                  {createExam.isLoading ? 'Creating...' : 'Create Exam'}
+                <Button type="submit" disabled={createExam.isPending}>
+                  {createExam.isPending ? 'Creating...' : 'Create Exam'}
                 </Button>
               </div>
             </form>

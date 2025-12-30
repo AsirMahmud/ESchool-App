@@ -116,8 +116,9 @@ class Teacher(models.Model):
     
     @property
     def current_subjects(self):
-        """Get subjects currently taught by this teacher"""
-        return self.subjects_taught.filter(is_active=True)
+        """Get subjects currently taught by this teacher (both direct and via hierarchy)"""
+        # Return section assignments as they are the primary source in the new hierarchy
+        return self.section_subjects.filter(is_active=True)
     
     @property
     def current_classes(self):

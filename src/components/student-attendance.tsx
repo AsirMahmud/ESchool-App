@@ -82,6 +82,7 @@ import {
 interface StudentAttendanceProps {
   studentId: string
   studentName?: string
+  readOnly?: boolean
 }
 
 const getStatusColor = (status: string) => {
@@ -114,7 +115,7 @@ const getStatusIcon = (status: string) => {
   }
 }
 
-export function StudentAttendance({ studentId, studentName }: StudentAttendanceProps) {
+export function StudentAttendance({ studentId, studentName, readOnly = false }: StudentAttendanceProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [viewMode, setViewMode] = useState<'calendar' | 'table'>('table')
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null)
@@ -159,7 +160,7 @@ export function StudentAttendance({ studentId, studentName }: StudentAttendanceP
         // Remove subject completely for student attendance
         subject: undefined
       }
-      
+
       await createAttendanceMutation.mutateAsync(formattedData)
       setIsAddDialogOpen(false)
     } catch (error) {
@@ -178,7 +179,7 @@ export function StudentAttendance({ studentId, studentName }: StudentAttendanceP
         // Remove subject completely for student attendance
         subject: undefined
       }
-      
+
       await updateAttendanceMutation.mutateAsync(formattedData)
       setIsEditDialogOpen(false)
       setEditingRecord(null)
@@ -229,21 +230,23 @@ export function StudentAttendance({ studentId, studentName }: StudentAttendanceP
               <SelectItem value="calendar">Calendar View</SelectItem>
             </SelectContent>
           </Select>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Record
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <AttendanceForm
-                title="Add Attendance Record"
-                onSubmit={handleAddAttendance}
-                isLoading={createAttendanceMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
+          {!readOnly && (
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Record
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <AttendanceForm
+                  title="Add Attendance Record"
+                  onSubmit={handleAddAttendance}
+                  isLoading={createAttendanceMutation.isPending}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -318,6 +321,7 @@ export function StudentAttendance({ studentId, studentName }: StudentAttendanceP
           {viewMode === 'table' ? (
             <AttendanceTable
               records={attendanceRecords || []}
+              readOnly={readOnly}
               onEdit={(record) => {
                 setEditingRecord(record)
                 setIsEditDialogOpen(true)
@@ -354,9 +358,10 @@ interface AttendanceTableProps {
   records: AttendanceRecord[]
   onEdit: (record: AttendanceRecord) => void
   onDelete: (id: number) => void
+  readOnly?: boolean
 }
 
-function AttendanceTable({ records, onEdit, onDelete }: AttendanceTableProps) {
+function AttendanceTable({ records, onEdit, onDelete, readOnly = false }: AttendanceTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -367,13 +372,13 @@ function AttendanceTable({ records, onEdit, onDelete }: AttendanceTableProps) {
             <TableHead>Check In</TableHead>
             <TableHead>Check Out</TableHead>
             <TableHead>Notes</TableHead>
-            <TableHead>Actions</TableHead>
+            {!readOnly && <TableHead>Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {records.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={readOnly ? 5 : 6} className="text-center py-8 text-muted-foreground">
                 No attendance records found for this period
               </TableCell>
             </TableRow>
@@ -390,38 +395,40 @@ function AttendanceTable({ records, onEdit, onDelete }: AttendanceTableProps) {
                 <TableCell>{record.check_in_time || '-'}</TableCell>
                 <TableCell>{record.check_out_time || '-'}</TableCell>
                 <TableCell className="max-w-xs truncate">{record.notes || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(record)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Attendance Record</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this attendance record? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDelete(record.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
+                {!readOnly && (
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(record)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Attendance Record</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this attendance record? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDelete(record.id)}>
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}
@@ -447,7 +454,7 @@ function AttendanceCalendar({ days, attendanceMap }: AttendanceCalendarProps) {
       {days.map((day) => {
         const dateStr = format(day, 'yyyy-MM-dd')
         const record = attendanceMap.get(dateStr)
-        
+
         return (
           <div
             key={dateStr}
@@ -511,9 +518,10 @@ function AttendanceForm({ title, initialData, onSubmit, isLoading }: AttendanceF
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="date">Date</Label>
-            <Input
+            <input
               id="date"
               type="date"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required
@@ -537,22 +545,24 @@ function AttendanceForm({ title, initialData, onSubmit, isLoading }: AttendanceF
             </Select>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="check_in_time">Check In Time</Label>
-            <Input
+            <input
               id="check_in_time"
               type="time"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.check_in_time}
               onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="check_out_time">Check Out Time</Label>
-            <Input
+            <input
               id="check_out_time"
               type="time"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={formData.check_out_time}
               onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
             />
