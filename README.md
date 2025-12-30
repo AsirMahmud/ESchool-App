@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+🎓 E-School App
 
-## Getting Started
+Live Demo: 👉 https://e-school-app.vercel.app
 
-First, run the development server:
+A modern School Management System built to manage academic, administrative, and communication workflows for schools. The platform supports multiple user roles with secure authentication and role-based access.
 
-```bash
+✨ Features
+
+🔐 Role-Based Authentication
+
+Admin
+
+Teacher
+
+Student
+
+Parent
+
+📊 Dashboard for Each Role
+
+🏫 Academic & School Management
+
+⚡ Fast & Responsive UI
+
+🌐 Deployed on Vercel
+
+🔑 Demo Login Credentials
+
+Use the following credentials to explore the app:
+
+👨‍💼 Admin
+
+Email: asir.mahmud@example.com
+
+Password: SecurePass!2025
+
+👨‍🏫 Teacher
+
+Email: habib2002@gmail.com
+
+Password: XnFwN71wGIuB
+
+👨‍🎓 Student
+
+Email: asirmahmuhd@gmail.com
+
+Password: MglQp8oPp9aH
+
+👨‍👩‍👧 Parent
+
+Email: parent@email.com
+
+Password: t#Au2XnAWhv8
+
+🚀 Tech Stack
+
+Frontend: Next.js / React
+
+Backend: API-based architecture
+
+Authentication: Role-based login system
+
+Deployment: Vercel
+
+📌 Project Purpose
+
+This project demonstrates:
+
+Multi-role authentication
+
+Real-world school management workflows
+
+Clean UI & scalable architecture
+
+Ideal for portfolio showcase, learning purposes, or future SaaS expansion.
+
+🛠️ Installation (Optional)
+git clone https://github.com/your-username/e-school-app.git
+cd e-school-app
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+📄 License
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This project is for educational and demonstration purposes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If you want, I can also:
 
-## Learn More
+Add screenshots section
 
-To learn more about Next.js, take a look at the following resources:
+Write a Fiverr / portfolio-ready README
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Optimize it for open-source contribution
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Add API documentation section
